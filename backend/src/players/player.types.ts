@@ -26,6 +26,11 @@ export type CreatePlayerInput = {
   verificationCheckedAt?: Date | null;
 };
 
+export type UpdatePlayerProfileInput = {
+  displayName?: string | null;
+  countryOrNbo?: string | null;
+};
+
 export function normalizeWbfNumber(wbfNumber: string): string {
   return wbfNumber.trim().replace(/\s+/g, "");
 }
