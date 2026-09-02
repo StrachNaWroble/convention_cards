@@ -41,11 +41,14 @@ Authorization: Bearer <access-token>
 
 - `GET /cards`: list cards owned by the signed-in player.
 - `POST /cards`: create a blank draft.
+- `POST /cards/from-template`: create a draft from a card template.
 - `GET /cards/:cardId`: load one owned card.
 - `PATCH /cards/:cardId`: autosave draft title and/or card data.
 - `POST /cards/:cardId/submit-for-approval`: move a draft into partner approval.
 - `POST /cards/:cardId/activate`: activate a submitted card after validation and partner approval.
 - `POST /cards/:cardId/archive`: archive a card.
+- `GET /cards/:cardId/share-links`: list share links for an owned card.
+- `POST /cards/:cardId/share-links`: create a public read-only share link for an active card.
 
 ### Partnerships
 
@@ -60,3 +63,13 @@ Authorization: Bearer <access-token>
 - `POST /partnerships/:partnershipId/approve`: approve an invitation as the partner.
 - `POST /partnerships/:partnershipId/decline`: decline an invitation as the partner.
 - `POST /partnerships/:partnershipId/archive`: archive a partnership visible to the signed-in player.
+
+### Templates
+
+- `GET /templates`: list system card templates.
+- `GET /templates/:slug`: load one template by slug.
+
+### Sharing
+
+- `POST /share-links/:shareLinkId/revoke`: revoke an owned share link.
+- `GET /shared/cards/:token`: publicly load an active shared card by raw share token.

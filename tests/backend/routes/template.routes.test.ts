@@ -7,8 +7,8 @@ import type { CardService } from "../../../backend/src/cards/card.service.js";
 import type { PartnershipService } from "../../../backend/src/partnerships/partnership.service.js";
 import type { Player } from "../../../backend/src/players/player.types.js";
 import type { SharingService } from "../../../backend/src/sharing/index.js";
-import { ok } from "../../../backend/src/shared/result.js";
-import type { TemplateService } from "../../../backend/src/templates/index.js";
+import { err, ok } from "../../../backend/src/shared/result.js";
+import type { CardTemplate, TemplateService } from "../../../backend/src/templates/index.js";
 import type { WbfVerificationService } from "../../../backend/src/wbf-verification/index.js";
 
 function buildPlayer(): Player {
@@ -27,6 +27,22 @@ function buildPlayer(): Player {
     lastLoginAt: null,
     createdAt: now,
     updatedAt: now,
+  };
+}
+
+function buildTemplate(overrides: Partial<CardTemplate> = {}): CardTemplate {
+  const now = new Date("2026-09-02T10:00:00.000Z");
+
+  return {
+    id: "template-1",
+    slug: "blank-wbf-card",
+    name: "Blank WBF Card",
+    description: "Blank template",
+    cardData: { meta: { format: "wbf" } },
+    isSystemTemplate: true,
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
   };
 }
 
@@ -69,13 +85,6 @@ function createPartnershipService(): PartnershipService {
   };
 }
 
-function createTemplateService(): TemplateService {
-  return {
-    listTemplates: vi.fn(async () => ok([])),
-    getTemplate: vi.fn(),
-  };
-}
-
 function createSharingService(): SharingService {
   return {
     createShareLink: vi.fn(),
@@ -85,17 +94,71 @@ function createSharingService(): SharingService {
   };
 }
 
-describe("WBF verification routes", () => {
-  it("verifies a submitted WBF number", async () => {
-    const wbfVerification: WbfVerificationService = {
-      verifyWbfNumber: vi.fn(async (wbfNumber: string) => ({
-        status: "found" as const,
-        wbfNumber,
-        playerName: "Test Player",
-        checkedAt: new Date("2026-09-02T12:00:00.000Z"),
-        confidence: "high" as const,
-      })),
-    };
+function createWbfVerificationService(): WbfVerificationService {
+  return {
+    verifyWbfNumber: vi.fn(async (wbfNumber: string) => ({
+      status: "unavailable" as const,
+      wbfNumber,
+      checkedAt: new Date("2026-09-02T10:00:00.000Z"),
+      confidence: "low" as const,
+    })),
+  };
+}
+
+function createTemplateService(template = buildTemplate()): TemplateService {
+  return {
+    listTemplates: vi.fn(async () => ok([template])),
+    getTemplate: vi.fn(async (slug: string) => (slug === template.slug ? ok(template) : err("TEMPLATE_NOT_FOUND"))),
+  };
+}
+
+describe("template routes", () => {
+  it("lists templates", async () => {
+    const templates = createTemplateService();
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards: createCardService(),
+      partnerships: createPartnershipService(),
+      sharing: createSharingService(),
+      templates,
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/templates");
+
+    expect(response.status).toBe(200);
+    expect(templates.listTemplates).toHaveBeenCalled();
+    expect(await response.json()).toMatchObject({
+      data: {
+        templates: [
+          {
+            slug: "blank-wbf-card",
+          },
+        ],
+      },
+    });
+  });
+
+  it("loads a template by slug", async () => {
+    const templates = createTemplateService();
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards: createCardService(),
+      partnerships: createPartnershipService(),
+      sharing: createSharingService(),
+      templates,
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/templates/blank-wbf-card");
+
+    expect(response.status).toBe(200);
+    expect(templates.getTemplate).toHaveBeenCalledWith("blank-wbf-card");
+  });
+
+  it("returns not found for an unknown template", async () => {
     const app = createApp({
       auth: createAuthService(),
       authProvider: createAuthProvider(),
@@ -103,24 +166,11 @@ describe("WBF verification routes", () => {
       partnerships: createPartnershipService(),
       sharing: createSharingService(),
       templates: createTemplateService(),
-      wbfVerification,
+      wbfVerification: createWbfVerificationService(),
     });
 
-    const response = await app.request("/wbf-verification/verify", {
-      method: "POST",
-      body: JSON.stringify({ wbfNumber: "123456" }),
-      headers: {
-        "content-type": "application/json",
-      },
-    });
+    const response = await app.request("/templates/unknown-template");
 
-    expect(response.status).toBe(200);
-    expect(wbfVerification.verifyWbfNumber).toHaveBeenCalledWith("123456");
-    expect(await response.json()).toMatchObject({
-      data: {
-        status: "found",
-        playerName: "Test Player",
-      },
-    });
+    expect(response.status).toBe(404);
   });
 });

@@ -10,6 +10,8 @@ import { createDrizzleCardRepository } from "./cards/card.repository.js";
 import { createApp } from "./app.js";
 import { createDrizzlePartnershipRepository, createPartnershipService } from "./partnerships/index.js";
 import { createDrizzlePlayerRepository } from "./players/player.repository.js";
+import { createDrizzleSharingRepository, createSharingService } from "./sharing/index.js";
+import { createDrizzleTemplateRepository, createTemplateService } from "./templates/index.js";
 import { createCardValidationService } from "./validation/index.js";
 import { createWbfPeopleFinderService } from "./wbf-verification/index.js";
 
@@ -19,6 +21,8 @@ const authProvider = createSupabaseAuthProvider(env);
 const playerRepository = createDrizzlePlayerRepository(database.db);
 const cardRepository = createDrizzleCardRepository(database.db);
 const partnershipRepository = createDrizzlePartnershipRepository(database.db);
+const sharingRepository = createDrizzleSharingRepository(database.db);
+const templateRepository = createDrizzleTemplateRepository(database.db);
 const auth = createAuthService({
   players: playerRepository,
   authProvider,
@@ -33,11 +37,19 @@ const partnerships = createPartnershipService({
   partnerships: partnershipRepository,
   players: playerRepository,
 });
+const templates = createTemplateService(templateRepository);
+const sharing = createSharingService({
+  cards: cardRepository,
+  partnerships: partnershipRepository,
+  sharing: sharingRepository,
+});
 const app = createApp({
   auth,
   authProvider,
   cards,
   partnerships,
+  sharing,
+  templates,
   wbfVerification: createWbfPeopleFinderService(),
 });
 const port = Number(process.env.PORT ?? "3000");

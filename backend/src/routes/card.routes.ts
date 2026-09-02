@@ -5,6 +5,7 @@ import type { ApiBindings, ApiServices } from "./api.types.js";
 import { createAuthMiddleware } from "./auth.middleware.js";
 import { parseJsonBody } from "./requestValidation.js";
 import { jsonError, jsonOk } from "./responses.js";
+import { createShareLinkRoutes } from "./sharing.routes.js";
 
 const cardDataSchema = z.record(z.string(), z.unknown());
 
@@ -12,6 +13,12 @@ const createCardSchema = z.object({
   title: z.string().min(1).optional(),
   partnershipId: z.string().uuid().nullable().optional(),
   cardData: cardDataSchema.optional(),
+});
+
+const createCardFromTemplateSchema = z.object({
+  templateSlug: z.string().min(1, "Template slug is required."),
+  title: z.string().min(1).optional(),
+  partnershipId: z.string().uuid().nullable().optional(),
 });
 
 const updateCardSchema = z.object({
@@ -39,6 +46,8 @@ export function createCardRoutes(services: ApiServices): Hono<ApiBindings> {
   const routes = new Hono<ApiBindings>();
   const requireAuth = createAuthMiddleware(services);
 
+  routes.route("/", createShareLinkRoutes(services));
+
   routes.use("*", requireAuth);
 
   routes.get("/", async (context) => {
@@ -64,6 +73,33 @@ export function createCardRoutes(services: ApiServices): Hono<ApiBindings> {
       partnershipId: body.data.partnershipId,
       title: body.data.title,
       cardData: body.data.cardData,
+    });
+
+    if (!result.ok) {
+      return cardErrorResponse(context, result.error, result.message);
+    }
+
+    return jsonOk(context, result.data, 201);
+  });
+
+  routes.post("/from-template", async (context) => {
+    const body = await parseJsonBody(context, createCardFromTemplateSchema);
+
+    if (!body.ok) {
+      return body.response;
+    }
+
+    const template = await services.templates.getTemplate(body.data.templateSlug);
+
+    if (!template.ok) {
+      return jsonError(context, 404, template.error, "Template was not found.");
+    }
+
+    const result = await services.cards.createBlankDraft({
+      ownerPlayerId: context.get("player").id,
+      partnershipId: body.data.partnershipId,
+      title: body.data.title ?? template.data.name,
+      cardData: template.data.cardData,
     });
 
     if (!result.ok) {

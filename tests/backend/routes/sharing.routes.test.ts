@@ -11,7 +11,7 @@ import { err, ok } from "../../../backend/src/shared/result.js";
 import type { TemplateService } from "../../../backend/src/templates/index.js";
 import type { WbfVerificationService } from "../../../backend/src/wbf-verification/index.js";
 
-function buildPlayer(overrides: Partial<Player> = {}): Player {
+function buildPlayer(): Player {
   const now = new Date("2026-09-02T10:00:00.000Z");
 
   return {
@@ -27,7 +27,6 @@ function buildPlayer(overrides: Partial<Player> = {}): Player {
     lastLoginAt: null,
     createdAt: now,
     updatedAt: now,
-    ...overrides,
   };
 }
 
@@ -42,25 +41,8 @@ function createAuthProvider(): AuthProvider {
 
 function createAuthService(player = buildPlayer()): AuthService {
   return {
-    registerPlayerAccount: vi.fn(async () =>
-      ok({
-        player,
-        authUser: {
-          id: player.authUserId,
-          email: player.email,
-        },
-      }),
-    ),
-    loginWithWbfNumber: vi.fn(async () =>
-      ok({
-        player,
-        session: {
-          accessToken: "access-token",
-          refreshToken: "refresh-token",
-          expiresAt: 1_788_345_600,
-        },
-      }),
-    ),
+    registerPlayerAccount: vi.fn(),
+    loginWithWbfNumber: vi.fn(),
     getCurrentPlayer: vi.fn(async () => ok(player)),
   };
 }
@@ -94,15 +76,6 @@ function createTemplateService(): TemplateService {
   };
 }
 
-function createSharingService(): SharingService {
-  return {
-    createShareLink: vi.fn(),
-    listShareLinks: vi.fn(async () => ok([])),
-    revokeShareLink: vi.fn(),
-    getPublicSharedCard: vi.fn(),
-  };
-}
-
 function createWbfVerificationService(): WbfVerificationService {
   return {
     verifyWbfNumber: vi.fn(async (wbfNumber: string) => ({
@@ -114,131 +87,109 @@ function createWbfVerificationService(): WbfVerificationService {
   };
 }
 
-describe("auth routes", () => {
-  it("registers a player account", async () => {
-    const auth = createAuthService();
-    const app = createApp({
-      auth,
-      authProvider: createAuthProvider(),
-      cards: createCardService(),
-      partnerships: createPartnershipService(),
-      sharing: createSharingService(),
-      templates: createTemplateService(),
-      wbfVerification: createWbfVerificationService(),
-    });
-
-    const response = await app.request("/auth/register", {
-      method: "POST",
-      body: JSON.stringify({
-        wbfNumber: "123456",
-        email: "player@example.com",
-        password: "safe-password",
+function createSharingService(): SharingService {
+  return {
+    createShareLink: vi.fn(),
+    listShareLinks: vi.fn(async () => ok([])),
+    revokeShareLink: vi.fn(async () =>
+      ok({
+        id: "share-link-1",
+        cardId: "card-1",
+        expiresAt: null,
+        revokedAt: new Date("2026-09-02T12:00:00.000Z"),
+        createdAt: new Date("2026-09-02T10:00:00.000Z"),
       }),
-      headers: {
-        "content-type": "application/json",
-      },
-    });
-
-    expect(response.status).toBe(201);
-    expect(auth.registerPlayerAccount).toHaveBeenCalledWith({
-      wbfNumber: "123456",
-      email: "player@example.com",
-      password: "safe-password",
-    });
-  });
-
-  it("returns a conflict when the WBF number is already registered", async () => {
-    const auth = createAuthService();
-    vi.mocked(auth.registerPlayerAccount).mockResolvedValueOnce(err("WBF_NUMBER_ALREADY_REGISTERED"));
-    const app = createApp({
-      auth,
-      authProvider: createAuthProvider(),
-      cards: createCardService(),
-      partnerships: createPartnershipService(),
-      sharing: createSharingService(),
-      templates: createTemplateService(),
-      wbfVerification: createWbfVerificationService(),
-    });
-
-    const response = await app.request("/auth/register", {
-      method: "POST",
-      body: JSON.stringify({
-        wbfNumber: "123456",
-        email: "player@example.com",
-        password: "safe-password",
-      }),
-      headers: {
-        "content-type": "application/json",
-      },
-    });
-
-    expect(response.status).toBe(409);
-    expect(await response.json()).toEqual({
-      error: {
-        code: "WBF_NUMBER_ALREADY_REGISTERED",
-        message: "This WBF number is already registered.",
-      },
-    });
-  });
-
-  it("logs in using WBF number and password", async () => {
-    const auth = createAuthService();
-    const app = createApp({
-      auth,
-      authProvider: createAuthProvider(),
-      cards: createCardService(),
-      partnerships: createPartnershipService(),
-      sharing: createSharingService(),
-      templates: createTemplateService(),
-      wbfVerification: createWbfVerificationService(),
-    });
-
-    const response = await app.request("/auth/login", {
-      method: "POST",
-      body: JSON.stringify({
-        wbfNumber: "123456",
-        password: "safe-password",
-      }),
-      headers: {
-        "content-type": "application/json",
-      },
-    });
-
-    expect(response.status).toBe(200);
-    expect(auth.loginWithWbfNumber).toHaveBeenCalledWith({
-      wbfNumber: "123456",
-      password: "safe-password",
-    });
-    expect(await response.json()).toMatchObject({
-      data: {
-        session: {
-          accessToken: "access-token",
+    ),
+    getPublicSharedCard: vi.fn(async () =>
+      ok({
+        card: {
+          id: "card-1",
+          title: "Shared card",
+          status: "active" as const,
+          cardData: { openings: { oneClub: "2+" } },
+          updatedAt: new Date("2026-09-02T10:00:00.000Z"),
         },
-      },
-    });
-  });
+        players: {
+          owner: {
+            displayName: "Owner",
+            wbfNumber: "123456",
+          },
+          partner: null,
+        },
+        shareLink: {
+          id: "share-link-1",
+          expiresAt: null,
+          createdAt: new Date("2026-09-02T10:00:00.000Z"),
+        },
+      }),
+    ),
+  };
+}
 
-  it("loads the current player from a bearer token", async () => {
-    const authProvider = createAuthProvider();
-    const auth = createAuthService();
+describe("sharing routes", () => {
+  it("revokes an owned share link", async () => {
+    const sharing = createSharingService();
     const app = createApp({
-      auth,
-      authProvider,
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
       cards: createCardService(),
       partnerships: createPartnershipService(),
-      sharing: createSharingService(),
+      sharing,
       templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
 
-    const response = await app.request("/auth/me", {
+    const response = await app.request("/share-links/share-link-1/revoke", {
+      method: "POST",
       headers: {
         authorization: "Bearer access-token",
       },
     });
 
     expect(response.status).toBe(200);
-    expect(authProvider.getUserByAccessToken).toHaveBeenCalledWith("access-token");
-    expect(auth.getCurrentPlayer).toHaveBeenCalledWith("auth-user-1");
+    expect(sharing.revokeShareLink).toHaveBeenCalledWith("share-link-1", "player-1");
+  });
+
+  it("loads a shared card publicly by token", async () => {
+    const sharing = createSharingService();
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards: createCardService(),
+      partnerships: createPartnershipService(),
+      sharing,
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/shared/cards/raw-token");
+
+    expect(response.status).toBe(200);
+    expect(sharing.getPublicSharedCard).toHaveBeenCalledWith("raw-token");
+    expect(await response.json()).toMatchObject({
+      data: {
+        card: {
+          title: "Shared card",
+        },
+      },
+    });
+  });
+
+  it("returns not found for invalid public tokens", async () => {
+    const sharing = createSharingService();
+    vi.mocked(sharing.getPublicSharedCard).mockResolvedValueOnce(err("SHARE_LINK_NOT_FOUND"));
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards: createCardService(),
+      partnerships: createPartnershipService(),
+      sharing,
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/shared/cards/bad-token");
+
+    expect(response.status).toBe(404);
   });
 });
