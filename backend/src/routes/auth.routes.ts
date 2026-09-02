@@ -19,6 +19,10 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required."),
 });
 
+const refreshSchema = z.object({
+  refreshToken: z.string().min(1, "Refresh token is required."),
+});
+
 export function createAuthRoutes(services: ApiServices): Hono<ApiBindings> {
   const routes = new Hono<ApiBindings>();
 
@@ -44,6 +48,10 @@ export function createAuthRoutes(services: ApiServices): Hono<ApiBindings> {
         return jsonError(context, 422, result.error, "This WBF number could not be found.");
       }
 
+      if (result.error === "WBF_VERIFICATION_UNAVAILABLE") {
+        return jsonError(context, 503, result.error, "WBF verification is temporarily unavailable.");
+      }
+
       return jsonError(context, 400, result.error, result.message ?? "Could not register player account.");
     }
 
@@ -64,6 +72,22 @@ export function createAuthRoutes(services: ApiServices): Hono<ApiBindings> {
     }
 
     return jsonOk(context, result.data);
+  });
+
+  routes.post("/refresh", async (context) => {
+    const body = await parseJsonBody(context, refreshSchema);
+
+    if (!body.ok) {
+      return body.response;
+    }
+
+    const result = await services.authProvider.refreshSession(body.data.refreshToken);
+
+    if (!result.ok) {
+      return jsonError(context, 401, result.error, "Invalid or expired refresh token.");
+    }
+
+    return jsonOk(context, { session: result.data });
   });
 
   routes.post("/logout", createAuthMiddleware(services), async (context) => {

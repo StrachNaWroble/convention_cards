@@ -35,6 +35,7 @@ function createAuthProvider(): AuthProvider {
   return {
     registerWithEmailPassword: vi.fn(),
     signInWithEmailPassword: vi.fn(),
+    refreshSession: vi.fn(),
     getUserByAccessToken: vi.fn(async () => ok({ id: "auth-user-1", email: "player@example.com" })),
     signOut: vi.fn(async () => ok(undefined)),
   };

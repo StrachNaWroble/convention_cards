@@ -86,6 +86,13 @@ function createAuthProvider(): AuthProvider {
         expiresAt: 1_788_345_600,
       }),
     ),
+    refreshSession: vi.fn(async () =>
+      ok({
+        accessToken: "new-access-token",
+        refreshToken: "new-refresh-token",
+        expiresAt: 1_788_349_200,
+      }),
+    ),
     getUserByAccessToken: vi.fn(async () => ok({ id: "auth-user-1", email: "player@example.com" })),
     signOut: vi.fn(async () => ok(undefined)),
   };
@@ -166,6 +173,26 @@ describe("auth service", () => {
     });
 
     expect(result).toEqual({ ok: false, error: "WBF_NUMBER_NOT_FOUND" });
+    expect(authProvider.registerWithEmailPassword).not.toHaveBeenCalled();
+  });
+
+  it("rejects registration when strict WBF verification is required and lookup is unavailable", async () => {
+    const repository = createPlayerRepository();
+    const authProvider = createAuthProvider();
+    const service = createAuthService({
+      players: repository,
+      authProvider,
+      wbfVerification: createWbfVerificationService("unavailable"),
+      requireWbfVerification: true,
+    });
+
+    const result = await service.registerPlayerAccount({
+      wbfNumber: "123456",
+      email: "player@example.com",
+      password: "safe-password",
+    });
+
+    expect(result).toEqual({ ok: false, error: "WBF_VERIFICATION_UNAVAILABLE" });
     expect(authProvider.registerWithEmailPassword).not.toHaveBeenCalled();
   });
 

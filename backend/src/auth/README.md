@@ -10,3 +10,7 @@ The login flow is:
 2. Find the player profile for that WBF number.
 3. Use the profile email to sign in through Supabase Auth.
 4. Return the Supabase session and linked player record.
+
+Session refresh uses the Supabase refresh token through `POST /auth/refresh`.
+
+Registration can be made strict with `REQUIRE_WBF_VERIFICATION=true`. In that mode, registration is blocked unless the WBF verification adapter confirms the submitted WBF number.

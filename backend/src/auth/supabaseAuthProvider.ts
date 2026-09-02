@@ -1,8 +1,8 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import WebSocket from 'ws';
+import WebSocket from "ws";
 
-if (typeof globalThis.WebSocket === 'undefined') {
-  globalThis.WebSocket = WebSocket as any;
+if (typeof globalThis.WebSocket === "undefined") {
+  globalThis.WebSocket = WebSocket as unknown as typeof globalThis.WebSocket;
 }
 
 import { err, ok } from "../shared/result.js";
@@ -71,6 +71,24 @@ export function createSupabaseAuthProvider(config: SupabaseConfig): AuthProvider
 
       if (!data.session?.access_token || !data.session.refresh_token) {
         return err("AUTH_SIGN_IN_FAILED", "Supabase did not return a session.");
+      }
+
+      return ok({
+        accessToken: data.session.access_token,
+        refreshToken: data.session.refresh_token,
+        expiresAt: data.session.expires_at,
+      });
+    },
+
+    async refreshSession(refreshToken) {
+      const { data, error } = await publicClient.auth.refreshSession({ refresh_token: refreshToken });
+
+      if (error) {
+        return err("AUTH_REFRESH_FAILED", error.message);
+      }
+
+      if (!data.session?.access_token || !data.session.refresh_token) {
+        return err("AUTH_REFRESH_FAILED", "Supabase did not return a refreshed session.");
       }
 
       return ok({

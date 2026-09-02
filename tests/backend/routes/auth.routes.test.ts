@@ -36,6 +36,13 @@ function createAuthProvider(): AuthProvider {
   return {
     registerWithEmailPassword: vi.fn(),
     signInWithEmailPassword: vi.fn(),
+    refreshSession: vi.fn(async () =>
+      ok({
+        accessToken: "new-access-token",
+        refreshToken: "new-refresh-token",
+        expiresAt: 1_788_349_200,
+      }),
+    ),
     getUserByAccessToken: vi.fn(async () => ok({ id: "auth-user-1", email: "player@example.com" })),
     signOut: vi.fn(async () => ok(undefined)),
   };
@@ -229,6 +236,106 @@ describe("auth routes", () => {
         session: {
           accessToken: "access-token",
         },
+      },
+    });
+  });
+
+  it("refreshes a Supabase session", async () => {
+    const authProvider = createAuthProvider();
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider,
+      cards: createCardService(),
+      partnerships: createPartnershipService(),
+      playerProfiles: createPlayerProfileService(),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/auth/refresh", {
+      method: "POST",
+      body: JSON.stringify({ refreshToken: "refresh-token" }),
+      headers: {
+        "content-type": "application/json",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(authProvider.refreshSession).toHaveBeenCalledWith("refresh-token");
+    expect(await response.json()).toEqual({
+      data: {
+        session: {
+          accessToken: "new-access-token",
+          refreshToken: "new-refresh-token",
+          expiresAt: 1_788_349_200,
+        },
+      },
+    });
+  });
+
+  it("rejects invalid refresh tokens", async () => {
+    const authProvider = createAuthProvider();
+    vi.mocked(authProvider.refreshSession).mockResolvedValueOnce(err("AUTH_REFRESH_FAILED"));
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider,
+      cards: createCardService(),
+      partnerships: createPartnershipService(),
+      playerProfiles: createPlayerProfileService(),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/auth/refresh", {
+      method: "POST",
+      body: JSON.stringify({ refreshToken: "bad-refresh-token" }),
+      headers: {
+        "content-type": "application/json",
+      },
+    });
+
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({
+      error: {
+        code: "AUTH_REFRESH_FAILED",
+        message: "Invalid or expired refresh token.",
+      },
+    });
+  });
+
+  it("maps strict WBF verification failures during registration", async () => {
+    const auth = createAuthService();
+    vi.mocked(auth.registerPlayerAccount).mockResolvedValueOnce(err("WBF_VERIFICATION_UNAVAILABLE"));
+    const app = createApp({
+      auth,
+      authProvider: createAuthProvider(),
+      cards: createCardService(),
+      partnerships: createPartnershipService(),
+      playerProfiles: createPlayerProfileService(),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/auth/register", {
+      method: "POST",
+      body: JSON.stringify({
+        wbfNumber: "123456",
+        email: "player@example.com",
+        password: "safe-password",
+      }),
+      headers: {
+        "content-type": "application/json",
+      },
+    });
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({
+      error: {
+        code: "WBF_VERIFICATION_UNAVAILABLE",
+        message: "WBF verification is temporarily unavailable.",
       },
     });
   });
