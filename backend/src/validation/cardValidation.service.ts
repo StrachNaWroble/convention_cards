@@ -1,9 +1,6 @@
 import type { ConventionCard } from "../cards/card.types.js";
 import type { CardValidationIssue, CardValidationResult, CardValidationService } from "./cardValidation.types.js";
-
-function hasCardContent(cardData: ConventionCard["cardData"]): boolean {
-  return typeof cardData === "object" && cardData !== null && Object.keys(cardData).length > 0;
-}
+import { validateWbfCardData } from "./wbfCardData.schema.js";
 
 export function createCardValidationService(): CardValidationService {
   return {
@@ -26,13 +23,7 @@ export function createCardValidationService(): CardValidationService {
         });
       }
 
-      if (!hasCardContent(card.cardData)) {
-        issues.push({
-          code: "CARD_DATA_REQUIRED",
-          path: "cardData",
-          message: "Card data is required before activation.",
-        });
-      }
+      issues.push(...validateWbfCardData(card.cardData).issues);
 
       return {
         valid: issues.length === 0,

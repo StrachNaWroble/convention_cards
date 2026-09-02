@@ -133,7 +133,7 @@ function createValidationService(valid = true): CardValidationService {
           ? []
           : [
               {
-                code: "CARD_DATA_REQUIRED",
+                code: "CARD_DATA_SECTION_REQUIRED",
                 path: "cardData",
                 message: "Card data is required before activation.",
               },
