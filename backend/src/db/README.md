@@ -1,13 +1,15 @@
-# Database (DB)
+# Database
 
-Database configuration, Drizzle schema definitions, and migrations live here.
+Database configuration, migrations, and persistence helpers live here.
 
-The first schema supports:
+The data model should store convention card content as structured fields rather than an opaque PDF or screenshot. This allows autosave, validation, cloning an existing card into a new draft, faithful rendering, browser print, and PDF export from the same source data.
 
-- `players`: WBF-number identity linked to Supabase Auth users.
-- `partnerships`: relationship/approval state between players.
-- `convention_cards`: card metadata plus flexible `jsonb` card content.
-- `card_templates`: reusable starting points such as a blank WBF card.
-- `share_links`: revocable read-only card links.
+Expected core entities:
 
-Cards can be persisted as incomplete drafts. Validation should block activation, sharing, and official export later, not ordinary autosave.
+- `players`
+- `partnerships`
+- `convention_cards`
+- `card_templates`
+- `share_links`
+
+Incomplete cards should be persisted as drafts. Activation, sharing, and official export should depend on validation and partner approval rather than on whether the draft can be saved.

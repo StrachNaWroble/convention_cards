@@ -1,7 +1,15 @@
 # Cards
 
-Convention-card persistence services live here.
+Convention card lifecycle and card data services live here.
 
-The first service supports blank draft creation, listing a player's cards, loading a single owned card, autosaving draft content, submitting a draft for partner approval, and archiving.
+Responsibilities:
 
-Card content is stored as `jsonb` so the WBF card schema can evolve while the editor and validation rules are still being built.
+- create a blank card draft;
+- create a draft from a template;
+- create a draft from an existing card;
+- autosave field updates;
+- submit complete cards for partner approval;
+- activate partner-approved cards;
+- archive cards without deleting their data.
+
+A card can be saved as a draft even when required WBF fields are missing. Required completeness should be enforced before activation, sharing, or official export.

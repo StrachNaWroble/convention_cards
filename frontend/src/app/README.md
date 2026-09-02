@@ -1,2 +1,14 @@
-# Main Views (App)
-This is where the main pages of the application will live, such as the login screen, the user's card list (dashboard), and the editor view itself.
+# Main Views
+
+Top-level application screens live here.
+
+Suggested screen groups:
+
+- `login`: WBF-number login and account setup.
+- `dashboard`: signed-in overview of partnerships, drafts, approvals, and active cards.
+- `partnerships`: create and approve partnerships.
+- `cards`: list, clone, archive, and manage cards.
+- `editor`: interactive WBF card canvas.
+- `shared`: public and partner-only read-only card pages.
+
+Keep screen composition here and place reusable behavior in `features/`, shared schemas in `schemas/`, and API calls in `services/`.

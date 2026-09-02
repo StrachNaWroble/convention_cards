@@ -1,32 +1,52 @@
 # Convention Cards
 
-Web app foundation for WBF-style bridge convention cards.
+Web app for creating, editing, storing, sharing, printing, and exporting WBF-style bridge convention cards.
 
-## Current Backend Direction
+## Product Direction
 
-Authentication is designed around player-facing WBF-number login while still using Supabase Auth internally:
+Players log in with their WBF number and a password of their choice. The WBF number should be verified through an integration layer before an account is treated as confirmed.
 
-1. During registration, a player provides their WBF number, email, and password.
-2. Supabase Auth stores the email/password identity.
-3. The `players` table links the Supabase auth user id to the player's WBF number.
-4. During login, the app accepts WBF number and password, finds the stored email for that WBF number, and signs in through Supabase.
+Each player can manage multiple partnerships. A player may create a convention card for a partnership, but the card cannot become active or be shared until the other partner approves it.
 
-Convention-card content is stored as structured JSON in PostgreSQL so drafts can autosave before every WBF-required field is complete.
+Users should be able to create cards from:
 
-## Environment
+- a blank WBF-style card;
+- a predefined system template such as 2/1, Precision, or Acol;
+- an existing card owned by the user, used as a starting point for a new card.
 
-Copy `.env.example` to `.env` and set:
+The editor should look like the printable WBF card rather than a detached form. Autosave should preserve incomplete work as a draft. Completing, activating, sharing, and official export should enforce required fields.
 
-- `DATABASE_URL`
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
+## Key Statuses
 
-`SUPABASE_SERVICE_ROLE_KEY` is used only on the server side and must never be exposed to browser code.
+Convention cards should support these lifecycle states:
 
-## Useful Commands
+- `draft`: incomplete or not yet submitted for partner approval;
+- `pending_partner_approval`: complete enough to submit, waiting for the partner;
+- `active`: partner-approved and available for sharing/export;
+- `archived`: retained for history or cloning, not active.
 
-- `npm run typecheck`
-- `npm test`
-- `npm run db:generate`
-- `npm run db:migrate`
+Partnerships should also track approval separately from card status so a user can maintain more than one active card with the same partner.
+
+## Main Domains
+
+- `auth`: WBF-number login, password handling, sessions, and account security.
+- `players`: player profile data, WBF number, name, country/NBO, and verification state.
+- `partnerships`: relationships between two players and partner approval state.
+- `cards`: convention card ownership, lifecycle, autosave, cloning, and active versions.
+- `templates`: blank WBF card and system presets used as editable starting points.
+- `sharing`: public read-only links and partner-only access.
+- `exports`: browser print and PDF export.
+- `validation`: required-field checks before activation, sharing, or official export.
+- `wbf-verification`: WBF player lookup integration hidden behind a stable internal service.
+
+## Frontend Direction
+
+The frontend should separate app screens, reusable UI, feature behavior, and the WBF card renderer.
+
+The WBF card should be represented as structured data, then rendered into a faithful two-page printable layout. This keeps the desktop editor, browser print, and PDF export aligned.
+
+Mobile support is not part of the first release, but the layout and data model should avoid assumptions that would make a later mobile/tablet editor impossible.
+
+## Reference Layout
+
+The initial reference card is `/Users/Florian/Desktop/Blank_wbf_card.pdf`. It is a two-page WBF-style card used as a visual/layout reference, not as executable project instructions and not as a fillable PDF form.
