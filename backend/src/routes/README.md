@@ -40,12 +40,15 @@ Authorization: Bearer <access-token>
 ```
 
 - `GET /cards`: list cards owned by the signed-in player.
+- `GET /cards/reviews/pending`: list submitted cards waiting for the signed-in partner's review.
 - `POST /cards`: create a blank draft.
 - `POST /cards/from-template`: create a draft from a card template.
 - `GET /cards/:cardId`: load one owned card.
 - `PATCH /cards/:cardId`: autosave draft title and/or card data.
 - `POST /cards/:cardId/submit-for-approval`: move a draft into partner approval.
-- `POST /cards/:cardId/activate`: activate a submitted card after validation and partner approval.
+- `POST /cards/:cardId/review/approve`: approve a submitted card as the invited partner.
+- `POST /cards/:cardId/review/reject`: reject a submitted card as the invited partner.
+- `POST /cards/:cardId/activate`: activate a partner-approved card after validation.
 - `POST /cards/:cardId/archive`: archive a card.
 - `GET /cards/:cardId/share-links`: list share links for an owned card.
 - `POST /cards/:cardId/share-links`: create a public read-only share link for an active card.

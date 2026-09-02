@@ -1,22 +1,35 @@
 import { err, ok, type Result } from "../shared/result.js";
 import type { PartnershipRepository } from "../partnerships/partnership.repository.js";
+import type { Player } from "../players/player.types.js";
 import type { CardValidationService } from "../validation/index.js";
 import type { CardRepository } from "./card.repository.js";
 import type { ConventionCard, CreateCardDraftInput, UpdateCardDraftInput } from "./card.types.js";
+
+const MAX_REJECTION_REASON_LENGTH = 1000;
 
 export type CardServiceError =
   | "CARD_NOT_FOUND"
   | "CARD_NOT_EDITABLE"
   | "CARD_CREATE_FAILED"
   | "CARD_NOT_READY_FOR_ACTIVATION"
-  | "PARTNERSHIP_NOT_APPROVED";
+  | "CARD_NOT_APPROVED_BY_PARTNER"
+  | "CARD_NOT_PENDING_REVIEW"
+  | "PARTNERSHIP_NOT_APPROVED"
+  | "REJECTION_REASON_TOO_LONG";
 
 export type CardService = {
   createBlankDraft(input: CreateCardDraftInput): Promise<Result<ConventionCard, CardServiceError>>;
   listMyCards(ownerPlayerId: string): Promise<Result<ConventionCard[], CardServiceError>>;
+  listCardsForPartnerReview(player: Player): Promise<Result<ConventionCard[], CardServiceError>>;
   getMyCard(cardId: string, ownerPlayerId: string): Promise<Result<ConventionCard, CardServiceError>>;
   autosaveDraft(input: UpdateCardDraftInput): Promise<Result<ConventionCard, CardServiceError>>;
   submitForPartnerApproval(cardId: string, ownerPlayerId: string): Promise<Result<ConventionCard, CardServiceError>>;
+  approveCardAsPartner(cardId: string, player: Player): Promise<Result<ConventionCard, CardServiceError>>;
+  rejectCardAsPartner(
+    cardId: string,
+    player: Player,
+    rejectionReason?: string | null,
+  ): Promise<Result<ConventionCard, CardServiceError>>;
   activateCard(cardId: string, ownerPlayerId: string): Promise<Result<ConventionCard, CardServiceError>>;
   archiveCard(cardId: string, ownerPlayerId: string): Promise<Result<ConventionCard, CardServiceError>>;
 };
@@ -47,6 +60,10 @@ export function createCardService({ cards, partnerships, validation, now = () =>
 
     async listMyCards(ownerPlayerId) {
       return ok(await cards.listByOwner(ownerPlayerId));
+    },
+
+    async listCardsForPartnerReview(player) {
+      return ok(await cards.listPendingReviewForPartner(player.id, player.wbfNumber));
     },
 
     async getMyCard(cardId, ownerPlayerId) {
@@ -105,6 +122,63 @@ export function createCardService({ cards, partnerships, validation, now = () =>
       return ok(card);
     },
 
+    async approveCardAsPartner(cardId, player) {
+      const existingCard = await cards.findCardForPartnerReview(cardId, player.id, player.wbfNumber);
+
+      if (!existingCard) {
+        return err("CARD_NOT_FOUND");
+      }
+
+      if (existingCard.status !== "pending_partner_approval") {
+        return err("CARD_NOT_PENDING_REVIEW");
+      }
+
+      const card = await cards.updatePartnerReviewStatus({
+        cardId,
+        reviewedByPlayerId: player.id,
+        status: "partner_approved",
+        reviewedAt: now(),
+      });
+
+      if (!card) {
+        return err("CARD_NOT_PENDING_REVIEW");
+      }
+
+      return ok(card);
+    },
+
+    async rejectCardAsPartner(cardId, player, rejectionReason) {
+      const existingCard = await cards.findCardForPartnerReview(cardId, player.id, player.wbfNumber);
+
+      if (!existingCard) {
+        return err("CARD_NOT_FOUND");
+      }
+
+      if (existingCard.status !== "pending_partner_approval") {
+        return err("CARD_NOT_PENDING_REVIEW");
+      }
+
+      const trimmedReason = rejectionReason?.trim() || null;
+
+      if (trimmedReason && trimmedReason.length > MAX_REJECTION_REASON_LENGTH) {
+        return err("REJECTION_REASON_TOO_LONG", "Rejection reason is too long.");
+      }
+
+      const card = await cards.updatePartnerReviewStatus({
+        cardId,
+        reviewedByPlayerId: player.id,
+        status: "partner_rejected",
+        reviewedAt: now(),
+        rejectionReason: trimmedReason,
+      });
+
+      if (!card) {
+        return err("CARD_NOT_PENDING_REVIEW");
+      }
+
+      return ok(card);
+    },
+
     async activateCard(cardId, ownerPlayerId) {
       const existingCard = await cards.findOwnedCard(cardId, ownerPlayerId);
 
@@ -112,7 +186,11 @@ export function createCardService({ cards, partnerships, validation, now = () =>
         return err("CARD_NOT_FOUND");
       }
 
-      if (existingCard.status !== "pending_partner_approval") {
+      if (existingCard.status !== "partner_approved") {
+        if (existingCard.status === "pending_partner_approval" || existingCard.status === "partner_rejected") {
+          return err("CARD_NOT_APPROVED_BY_PARTNER");
+        }
+
         return err("CARD_NOT_EDITABLE");
       }
 

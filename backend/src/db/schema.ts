@@ -29,6 +29,8 @@ export const partnershipStatusEnum = pgEnum("partnership_status", [
 export const cardStatusEnum = pgEnum("card_status", [
   "draft",
   "pending_partner_approval",
+  "partner_approved",
+  "partner_rejected",
   "active",
   "archived",
 ]);
@@ -88,6 +90,9 @@ export const conventionCards = pgTable(
     status: cardStatusEnum("status").notNull().default("draft"),
     cardData: jsonb("card_data").$type<ConventionCardData>().notNull(),
     submittedAt: timestamp("submitted_at", { withTimezone: true }),
+    partnerReviewedByPlayerId: uuid("partner_reviewed_by_player_id").references(() => players.id, { onDelete: "set null" }),
+    partnerReviewedAt: timestamp("partner_reviewed_at", { withTimezone: true }),
+    partnerRejectionReason: text("partner_rejection_reason"),
     activatedAt: timestamp("activated_at", { withTimezone: true }),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -96,6 +101,7 @@ export const conventionCards = pgTable(
   (table) => ({
     ownerIndex: index("convention_cards_owner_player_id_idx").on(table.ownerPlayerId),
     partnershipIndex: index("convention_cards_partnership_id_idx").on(table.partnershipId),
+    partnerReviewIndex: index("convention_cards_partner_reviewed_by_player_id_idx").on(table.partnerReviewedByPlayerId),
     statusIndex: index("convention_cards_status_idx").on(table.status),
   }),
 );

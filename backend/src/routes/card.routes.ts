@@ -26,6 +26,10 @@ const updateCardSchema = z.object({
   cardData: cardDataSchema.optional(),
 });
 
+const rejectCardReviewSchema = z.object({
+  rejectionReason: z.string().max(1000).optional(),
+});
+
 function cardErrorResponse(context: Parameters<typeof jsonError>[0], error: string, message?: string): Response {
   if (error === "CARD_NOT_FOUND") {
     return jsonError(context, 404, error, "Card was not found.");
@@ -35,8 +39,20 @@ function cardErrorResponse(context: Parameters<typeof jsonError>[0], error: stri
     return jsonError(context, 409, error, "This card cannot be edited in its current status.");
   }
 
+  if (error === "CARD_NOT_PENDING_REVIEW") {
+    return jsonError(context, 409, error, "This card is not waiting for partner review.");
+  }
+
+  if (error === "CARD_NOT_APPROVED_BY_PARTNER") {
+    return jsonError(context, 409, error, "This card must be approved by the partner before activation.");
+  }
+
   if (error === "CARD_NOT_READY_FOR_ACTIVATION" || error === "PARTNERSHIP_NOT_APPROVED") {
     return jsonError(context, 409, error, message ?? "This card is not ready for activation.");
+  }
+
+  if (error === "REJECTION_REASON_TOO_LONG") {
+    return jsonError(context, 422, error, message ?? "Rejection reason is too long.");
   }
 
   return jsonError(context, 400, error, message ?? "Could not process card request.");
@@ -53,6 +69,16 @@ export function createCardRoutes(services: ApiServices): Hono<ApiBindings> {
   routes.get("/", async (context) => {
     const player = context.get("player");
     const result = await services.cards.listMyCards(player.id);
+
+    if (!result.ok) {
+      return cardErrorResponse(context, result.error, result.message);
+    }
+
+    return jsonOk(context, { cards: result.data });
+  });
+
+  routes.get("/reviews/pending", async (context) => {
+    const result = await services.cards.listCardsForPartnerReview(context.get("player"));
 
     if (!result.ok) {
       return cardErrorResponse(context, result.error, result.message);
@@ -142,6 +168,36 @@ export function createCardRoutes(services: ApiServices): Hono<ApiBindings> {
 
   routes.post("/:cardId/submit-for-approval", async (context) => {
     const result = await services.cards.submitForPartnerApproval(context.req.param("cardId"), context.get("player").id);
+
+    if (!result.ok) {
+      return cardErrorResponse(context, result.error, result.message);
+    }
+
+    return jsonOk(context, result.data);
+  });
+
+  routes.post("/:cardId/review/approve", async (context) => {
+    const result = await services.cards.approveCardAsPartner(context.req.param("cardId"), context.get("player"));
+
+    if (!result.ok) {
+      return cardErrorResponse(context, result.error, result.message);
+    }
+
+    return jsonOk(context, result.data);
+  });
+
+  routes.post("/:cardId/review/reject", async (context) => {
+    const body = await parseJsonBody(context, rejectCardReviewSchema);
+
+    if (!body.ok) {
+      return body.response;
+    }
+
+    const result = await services.cards.rejectCardAsPartner(
+      context.req.param("cardId"),
+      context.get("player"),
+      body.data.rejectionReason,
+    );
 
     if (!result.ok) {
       return cardErrorResponse(context, result.error, result.message);

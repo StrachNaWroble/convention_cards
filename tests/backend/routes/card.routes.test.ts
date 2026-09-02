@@ -42,6 +42,9 @@ function buildCard(overrides: Partial<ConventionCard> = {}): ConventionCard {
     status: "draft",
     cardData: {},
     submittedAt: null,
+    partnerReviewedByPlayerId: null,
+    partnerReviewedAt: null,
+    partnerRejectionReason: null,
     activatedAt: null,
     archivedAt: null,
     createdAt: now,
@@ -71,9 +74,14 @@ function createCardService(card = buildCard()): CardService {
   return {
     createBlankDraft: vi.fn(async () => ok(card)),
     listMyCards: vi.fn(async () => ok([card])),
+    listCardsForPartnerReview: vi.fn(async () => ok([buildCard({ status: "pending_partner_approval" })])),
     getMyCard: vi.fn(async () => ok(card)),
     autosaveDraft: vi.fn(async () => ok(card)),
     submitForPartnerApproval: vi.fn(async () => ok(buildCard({ ...card, status: "pending_partner_approval" }))),
+    approveCardAsPartner: vi.fn(async () => ok(buildCard({ ...card, status: "partner_approved" }))),
+    rejectCardAsPartner: vi.fn(async () =>
+      ok(buildCard({ ...card, status: "partner_rejected", partnerRejectionReason: "Please check leads." })),
+    ),
     activateCard: vi.fn(async () => ok(buildCard({ ...card, status: "active" }))),
     archiveCard: vi.fn(async () => ok(buildCard({ ...card, status: "archived" }))),
   };
@@ -294,6 +302,76 @@ describe("card routes", () => {
         message: "This card cannot be edited in its current status.",
       },
     });
+  });
+
+  it("lists cards waiting for this partner's review", async () => {
+    const cards = createCardService();
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards,
+      partnerships: createPartnershipService(),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/cards/reviews/pending", {
+      headers: {
+        authorization: "Bearer access-token",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(cards.listCardsForPartnerReview).toHaveBeenCalledWith(buildPlayer());
+  });
+
+  it("approves a submitted card as the partner", async () => {
+    const cards = createCardService();
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards,
+      partnerships: createPartnershipService(),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/cards/card-1/review/approve", {
+      method: "POST",
+      headers: {
+        authorization: "Bearer access-token",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(cards.approveCardAsPartner).toHaveBeenCalledWith("card-1", buildPlayer());
+  });
+
+  it("rejects a submitted card as the partner", async () => {
+    const cards = createCardService();
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards,
+      partnerships: createPartnershipService(),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/cards/card-1/review/reject", {
+      method: "POST",
+      body: JSON.stringify({ rejectionReason: "Please check leads." }),
+      headers: {
+        authorization: "Bearer access-token",
+        "content-type": "application/json",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(cards.rejectCardAsPartner).toHaveBeenCalledWith("card-1", buildPlayer(), "Please check leads.");
   });
 
   it("activates a submitted and approved card", async () => {

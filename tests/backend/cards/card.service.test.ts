@@ -2,9 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { createCardService } from "../../../backend/src/cards/card.service.js";
 import type { CardRepository } from "../../../backend/src/cards/card.repository.js";
-import type { CardStatus, ConventionCard } from "../../../backend/src/cards/card.types.js";
+import type { CardStatus, ConventionCard, PartnerCardReviewStatus } from "../../../backend/src/cards/card.types.js";
 import type { PartnershipRepository } from "../../../backend/src/partnerships/partnership.repository.js";
 import type { Partnership } from "../../../backend/src/partnerships/partnership.types.js";
+import type { Player } from "../../../backend/src/players/player.types.js";
 import type { CardValidationService } from "../../../backend/src/validation/index.js";
 
 function buildCard(overrides: Partial<ConventionCard> = {}): ConventionCard {
@@ -18,8 +19,31 @@ function buildCard(overrides: Partial<ConventionCard> = {}): ConventionCard {
     status: "draft",
     cardData: {},
     submittedAt: null,
+    partnerReviewedByPlayerId: null,
+    partnerReviewedAt: null,
+    partnerRejectionReason: null,
     activatedAt: null,
     archivedAt: null,
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  };
+}
+
+function buildPlayer(overrides: Partial<Player> = {}): Player {
+  const now = new Date("2026-09-02T10:00:00.000Z");
+
+  return {
+    id: "player-2",
+    authUserId: "auth-user-2",
+    wbfNumber: "654321",
+    email: "partner@example.com",
+    displayName: "Partner",
+    countryOrNbo: null,
+    verificationStatus: "pending",
+    verificationSource: null,
+    verificationCheckedAt: null,
+    lastLoginAt: null,
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -63,8 +87,37 @@ function createCardRepository(seed: ConventionCard[] = []): CardRepository {
       return cards.filter((card) => card.ownerPlayerId === ownerPlayerId);
     },
 
+    async listPendingReviewForPartner(playerId, wbfNumber) {
+      return cards.filter((card) => {
+        const partnership = card.partnershipId
+          ? buildPartnership({ id: card.partnershipId })
+          : null;
+
+        return (
+          card.status === "pending_partner_approval" &&
+          partnership?.status === "approved" &&
+          (partnership.partnerPlayerId === playerId || partnership.partnerWbfNumber === wbfNumber)
+        );
+      });
+    },
+
     async findOwnedCard(cardId, ownerPlayerId) {
       return cards.find((card) => card.id === cardId && card.ownerPlayerId === ownerPlayerId) ?? null;
+    },
+
+    async findCardForPartnerReview(cardId, playerId, wbfNumber) {
+      const card = cards.find((candidate) => candidate.id === cardId);
+      const partnership = card?.partnershipId ? buildPartnership({ id: card.partnershipId }) : null;
+
+      if (
+        !card ||
+        partnership?.status !== "approved" ||
+        (partnership.partnerPlayerId !== playerId && partnership.partnerWbfNumber !== wbfNumber)
+      ) {
+        return null;
+      }
+
+      return card;
     },
 
     async updateDraft(input, updatedAt) {
@@ -101,6 +154,9 @@ function createCardRepository(seed: ConventionCard[] = []): CardRepository {
 
       if (status === "pending_partner_approval") {
         card.submittedAt = updatedAt;
+        card.partnerReviewedByPlayerId = null;
+        card.partnerReviewedAt = null;
+        card.partnerRejectionReason = null;
       }
 
       if (status === "archived") {
@@ -111,6 +167,27 @@ function createCardRepository(seed: ConventionCard[] = []): CardRepository {
         card.activatedAt = updatedAt;
       }
 
+      return card;
+    },
+
+    async updatePartnerReviewStatus(input: {
+      cardId: string;
+      reviewedByPlayerId: string;
+      status: PartnerCardReviewStatus;
+      reviewedAt: Date;
+      rejectionReason?: string | null;
+    }) {
+      const card = cards.find((candidate) => candidate.id === input.cardId && candidate.status === "pending_partner_approval");
+
+      if (!card) {
+        return null;
+      }
+
+      card.status = input.status;
+      card.partnerReviewedByPlayerId = input.reviewedByPlayerId;
+      card.partnerReviewedAt = input.reviewedAt;
+      card.partnerRejectionReason = input.status === "partner_rejected" ? input.rejectionReason ?? null : null;
+      card.updatedAt = input.reviewedAt;
       return card;
     },
   };
@@ -221,13 +298,99 @@ describe("card service", () => {
     expect(result.data.submittedAt).toEqual(submitTime);
   });
 
-  it("activates a submitted card when its partnership is approved", async () => {
-    const activateTime = new Date("2026-09-02T14:00:00.000Z");
+  it("lists submitted cards waiting for partner review", async () => {
     const repository = createCardRepository([
       buildCard({
         status: "pending_partner_approval",
         partnershipId: "partnership-1",
+      }),
+      buildCard({
+        id: "card-2",
+        status: "draft",
+        partnershipId: "partnership-1",
+      }),
+    ]);
+    const service = createCardService({ cards: repository });
+
+    const result = await service.listCardsForPartnerReview(buildPlayer());
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.data.map((card) => card.id)).toEqual(["card-1"]);
+  });
+
+  it("lets the partner approve a submitted card", async () => {
+    const reviewTime = new Date("2026-09-02T13:30:00.000Z");
+    const repository = createCardRepository([
+      buildCard({
+        status: "pending_partner_approval",
+        partnershipId: "partnership-1",
+      }),
+    ]);
+    const service = createCardService({
+      cards: repository,
+      now: () => reviewTime,
+    });
+
+    const result = await service.approveCardAsPartner("card-1", buildPlayer());
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.data.status).toBe("partner_approved");
+    expect(result.data.partnerReviewedByPlayerId).toBe("player-2");
+    expect(result.data.partnerReviewedAt).toEqual(reviewTime);
+    expect(result.data.partnerRejectionReason).toBeNull();
+  });
+
+  it("lets the partner reject a submitted card with a reason", async () => {
+    const reviewTime = new Date("2026-09-02T13:45:00.000Z");
+    const repository = createCardRepository([
+      buildCard({
+        status: "pending_partner_approval",
+        partnershipId: "partnership-1",
+      }),
+    ]);
+    const service = createCardService({
+      cards: repository,
+      now: () => reviewTime,
+    });
+
+    const result = await service.rejectCardAsPartner("card-1", buildPlayer(), "  Please check leads. ");
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.data.status).toBe("partner_rejected");
+    expect(result.data.partnerReviewedByPlayerId).toBe("player-2");
+    expect(result.data.partnerReviewedAt).toEqual(reviewTime);
+    expect(result.data.partnerRejectionReason).toBe("Please check leads.");
+  });
+
+  it("blocks review once a card is no longer pending partner approval", async () => {
+    const repository = createCardRepository([
+      buildCard({
+        status: "partner_approved",
+        partnershipId: "partnership-1",
+      }),
+    ]);
+    const service = createCardService({ cards: repository });
+
+    const result = await service.approveCardAsPartner("card-1", buildPlayer());
+
+    expect(result).toEqual({ ok: false, error: "CARD_NOT_PENDING_REVIEW" });
+  });
+
+  it("activates a partner-approved card when its partnership is approved", async () => {
+    const activateTime = new Date("2026-09-02T14:00:00.000Z");
+    const repository = createCardRepository([
+      buildCard({
+        status: "partner_approved",
+        partnershipId: "partnership-1",
         cardData: { openings: { oneClub: "2+" } },
+        partnerReviewedByPlayerId: "player-2",
+        partnerReviewedAt: new Date("2026-09-02T13:30:00.000Z"),
       }),
     ]);
     const service = createCardService({
@@ -246,12 +409,33 @@ describe("card service", () => {
     expect(result.data.activatedAt).toEqual(activateTime);
   });
 
-  it("blocks activation before partner approval", async () => {
+  it("blocks activation before partner card approval", async () => {
     const repository = createCardRepository([
       buildCard({
         status: "pending_partner_approval",
         partnershipId: "partnership-1",
         cardData: { openings: { oneClub: "2+" } },
+      }),
+    ]);
+    const service = createCardService({
+      cards: repository,
+      partnerships: createPartnershipRepository([buildPartnership()]),
+      validation: createValidationService(),
+    });
+
+    const result = await service.activateCard("card-1", "player-1");
+
+    expect(result).toEqual({ ok: false, error: "CARD_NOT_APPROVED_BY_PARTNER" });
+  });
+
+  it("blocks activation before partner approval", async () => {
+    const repository = createCardRepository([
+      buildCard({
+        status: "partner_approved",
+        partnershipId: "partnership-1",
+        cardData: { openings: { oneClub: "2+" } },
+        partnerReviewedByPlayerId: "player-2",
+        partnerReviewedAt: new Date("2026-09-02T13:30:00.000Z"),
       }),
     ]);
     const service = createCardService({
@@ -268,8 +452,10 @@ describe("card service", () => {
   it("blocks activation when validation fails", async () => {
     const repository = createCardRepository([
       buildCard({
-        status: "pending_partner_approval",
+        status: "partner_approved",
         partnershipId: "partnership-1",
+        partnerReviewedByPlayerId: "player-2",
+        partnerReviewedAt: new Date("2026-09-02T13:30:00.000Z"),
       }),
     ]);
     const service = createCardService({
