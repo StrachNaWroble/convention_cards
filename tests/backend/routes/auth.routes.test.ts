@@ -69,9 +69,12 @@ function createCardService(): CardService {
   return {
     createBlankDraft: vi.fn(),
     listMyCards: vi.fn(async () => ok([])),
+    listCardsForPartnerReview: vi.fn(async () => ok([])),
     getMyCard: vi.fn(),
     autosaveDraft: vi.fn(),
     submitForPartnerApproval: vi.fn(),
+    approveCardAsPartner: vi.fn(),
+    rejectCardAsPartner: vi.fn(),
     activateCard: vi.fn(),
     archiveCard: vi.fn(),
   };

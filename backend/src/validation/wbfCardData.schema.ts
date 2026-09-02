@@ -2,7 +2,10 @@ import type { ConventionCardData } from "../cards/card.types.js";
 import type { CardValidationIssue } from "./cardValidation.types.js";
 
 const WBF_SECTION_LABELS = {
+  meta: "meta",
   metadata: "metadata",
+  players: "players",
+  system: "system",
   openings: "openings",
   notrump: "notrump",
   responses: "responses",
@@ -12,6 +15,7 @@ const WBF_SECTION_LABELS = {
   preempts: "preempts",
   slam: "slam",
   leads: "leads",
+  leadsAndSignals: "leadsAndSignals",
   carding: "carding",
   defensive: "defensive",
   competitive: "competitive",

@@ -18,6 +18,9 @@ function buildCard(overrides: Partial<ConventionCard> = {}): ConventionCard {
     status: "active",
     cardData: { openings: { oneClub: "2+" } },
     submittedAt: now,
+    partnerReviewedByPlayerId: "player-2",
+    partnerReviewedAt: now,
+    partnerRejectionReason: null,
     activatedAt: now,
     archivedAt: null,
     createdAt: now,
@@ -62,14 +65,23 @@ function createCardRepository(seed: ConventionCard[] = []): CardRepository {
     async listByOwner() {
       return [];
     },
+    async listPendingReviewForPartner() {
+      return [];
+    },
     async findOwnedCard(cardId, ownerPlayerId) {
       return seed.find((card) => card.id === cardId && card.ownerPlayerId === ownerPlayerId) ?? null;
+    },
+    async findCardForPartnerReview() {
+      return null;
     },
     async updateDraft() {
       return null;
     },
     async updateStatus(_cardId: string, _ownerPlayerId: string, status: CardStatus) {
       return seed.find((card) => card.status === status) ?? null;
+    },
+    async updatePartnerReviewStatus() {
+      return null;
     },
   };
 }

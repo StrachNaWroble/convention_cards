@@ -18,6 +18,9 @@ function buildCard(overrides: Partial<ConventionCard> = {}): ConventionCard {
       },
     },
     submittedAt: now,
+    partnerReviewedByPlayerId: "player-2",
+    partnerReviewedAt: now,
+    partnerRejectionReason: null,
     activatedAt: null,
     archivedAt: null,
     createdAt: now,
@@ -42,6 +45,28 @@ describe("WBF card data validation", () => {
       hasMeaningfulContent: true,
       issues: [],
     });
+  });
+
+  it("accepts the section names used by the blank WBF template", () => {
+    const result = validateWbfCardData({
+      meta: {
+        format: "wbf",
+      },
+      players: {
+        northSouth: {
+          playerOne: "North",
+        },
+      },
+      system: {
+        generalApproach: "2/1",
+      },
+      leadsAndSignals: {
+        openingLeads: "3rd/5th",
+      },
+    });
+
+    expect(result.issues).toEqual([]);
+    expect(result.hasMeaningfulContent).toBe(true);
   });
 
   it("rejects unknown top-level card sections", () => {
