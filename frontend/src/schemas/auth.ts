@@ -4,7 +4,7 @@ export const loginSchema = z.object({
   wbfNumber: z
     .string()
     .min(1, 'WBF Number is required')
-    .regex(/^[0-9]+$/, 'WBF Number must contain only digits'),
+    .regex(/^[A-Za-z0-9]+$/, 'WBF Number must contain only letters and digits'),
   password: z
     .string()
     .min(6, 'Password must be at least 6 characters long'),
@@ -20,7 +20,7 @@ export const registerSchema = z.object({
   wbfNumber: z
     .string()
     .min(1, 'WBF Number is required')
-    .regex(/^[0-9]+$/, 'WBF Number must contain only digits'),
+    .regex(/^[A-Za-z0-9]+$/, 'WBF Number must contain only letters and digits'),
   password: z
     .string()
     .min(6, 'Password must be at least 6 characters long'),

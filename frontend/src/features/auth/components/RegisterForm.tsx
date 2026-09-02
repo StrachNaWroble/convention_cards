@@ -5,9 +5,10 @@ import { z } from 'zod';
 interface RegisterFormProps {
   onSubmit?: (data: RegisterFormData) => void;
   isLoading?: boolean;
+  onNavigateToLogin?: () => void;
 }
 
-export const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, isLoading = false }) => {
+export const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, isLoading = false, onNavigateToLogin }) => {
   const [formData, setFormData] = useState<RegisterFormData>({
     email: '',
     wbfNumber: '',
@@ -177,9 +178,13 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, isLoading 
         <div className="text-center mt-4">
           <p className="text-sm text-gray-400">
             Already have an account?{' '}
-            <a href="#" className="font-semibold text-indigo-400 hover:text-indigo-300 transition-colors">
+            <button 
+              type="button"
+              onClick={(e) => { e.preventDefault(); onNavigateToLogin?.(); }} 
+              className="font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
+            >
               Sign in
-            </a>
+            </button>
           </p>
         </div>
       </form>

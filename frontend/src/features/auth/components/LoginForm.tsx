@@ -5,9 +5,10 @@ import { z } from 'zod';
 interface LoginFormProps {
   onSubmit?: (data: LoginFormData) => void;
   isLoading?: boolean;
+  onNavigateToRegister?: () => void;
 }
 
-export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading = false }) => {
+export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading = false, onNavigateToRegister }) => {
   const [formData, setFormData] = useState<LoginFormData>({
     wbfNumber: '',
     password: '',
@@ -153,6 +154,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading = fals
             )}
             {isLoading ? 'Signing in...' : 'Sign in'}
           </button>
+        </div>
+
+        <div className="text-center mt-4">
+          <p className="text-sm text-gray-400">
+            Don't have an account?{' '}
+            <button 
+              type="button" 
+              onClick={(e) => { e.preventDefault(); onNavigateToRegister?.(); }} 
+              className="font-semibold text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              Sign up
+            </button>
+          </p>
         </div>
       </form>
     </div>
