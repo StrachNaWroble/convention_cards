@@ -24,6 +24,7 @@ Prefer resource-oriented endpoints over action-heavy names where it stays readab
 
 - `POST /auth/register`: create a player account with WBF number, email, and password.
 - `POST /auth/login`: sign in with WBF number and password.
+- `POST /auth/refresh`: exchange a refresh token for a new Supabase session.
 - `POST /auth/logout`: revoke the current bearer token.
 - `GET /auth/me`: return the current player profile for the bearer token.
 

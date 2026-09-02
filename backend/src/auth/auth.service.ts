@@ -16,6 +16,7 @@ export type AuthServiceError =
   | "INVALID_CREDENTIALS"
   | "AUTH_PROVIDER_ERROR"
   | "WBF_NUMBER_NOT_FOUND"
+  | "WBF_VERIFICATION_UNAVAILABLE"
   | "PLAYER_CREATE_FAILED";
 
 export type AuthService = {
@@ -28,6 +29,7 @@ type AuthServiceDeps = {
   players: PlayerRepository;
   authProvider: AuthProvider;
   wbfVerification?: WbfVerificationService;
+  requireWbfVerification?: boolean;
   now?: () => Date;
 };
 
@@ -35,6 +37,7 @@ export function createAuthService({
   players,
   authProvider,
   wbfVerification,
+  requireWbfVerification = false,
   now = () => new Date(),
 }: AuthServiceDeps): AuthService {
   return {
@@ -56,6 +59,10 @@ export function createAuthService({
 
       if (verification?.status === "not_found") {
         return err("WBF_NUMBER_NOT_FOUND");
+      }
+
+      if (requireWbfVerification && verification?.status !== "found") {
+        return err("WBF_VERIFICATION_UNAVAILABLE");
       }
 
       const authUser = await authProvider.registerWithEmailPassword(email, input.password);

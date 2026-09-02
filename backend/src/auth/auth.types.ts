@@ -20,6 +20,7 @@ export type CurrentAuthUser = {
 export type AuthProvider = {
   registerWithEmailPassword(email: string, password: string): Promise<Result<RegisteredAuthUser, AuthProviderError>>;
   signInWithEmailPassword(email: string, password: string): Promise<Result<AuthSession, AuthProviderError>>;
+  refreshSession(refreshToken: string): Promise<Result<AuthSession, AuthProviderError>>;
   getUserByAccessToken(accessToken: string): Promise<Result<CurrentAuthUser, AuthProviderError>>;
   signOut(accessToken?: string): Promise<Result<void, AuthProviderError>>;
 };
@@ -27,6 +28,7 @@ export type AuthProvider = {
 export type AuthProviderError =
   | "AUTH_EMAIL_ALREADY_EXISTS"
   | "AUTH_INVALID_CREDENTIALS"
+  | "AUTH_REFRESH_FAILED"
   | "AUTH_REGISTRATION_FAILED"
   | "AUTH_SIGN_IN_FAILED"
   | "AUTH_SESSION_INVALID"

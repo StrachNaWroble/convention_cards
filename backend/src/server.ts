@@ -28,6 +28,7 @@ const auth = createAuthService({
   players: playerRepository,
   authProvider,
   wbfVerification: createWbfPeopleFinderService(),
+  requireWbfVerification: env.requireWbfVerification,
 });
 const cards = createCardService({
   cards: cardRepository,

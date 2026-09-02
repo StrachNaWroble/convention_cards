@@ -10,6 +10,7 @@ Create a Supabase project and copy these values into `.env`:
 - `SUPABASE_URL`: project API URL.
 - `SUPABASE_ANON_KEY`: public browser/server auth key.
 - `SUPABASE_SERVICE_ROLE_KEY`: private server-only key.
+- `REQUIRE_WBF_VERIFICATION`: optional. Set to `true` in stricter environments to block registration when WBF verification is unavailable.
 
 Keep `SUPABASE_SERVICE_ROLE_KEY` out of frontend code.
 
