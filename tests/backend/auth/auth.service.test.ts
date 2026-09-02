@@ -76,6 +76,7 @@ function createAuthProvider(): AuthProvider {
         expiresAt: 1_788_345_600,
       }),
     ),
+    getUserByAccessToken: vi.fn(async () => ok({ id: "auth-user-1", email: "player@example.com" })),
     signOut: vi.fn(async () => ok(undefined)),
   };
 }

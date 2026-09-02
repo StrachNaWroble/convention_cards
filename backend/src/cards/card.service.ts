@@ -6,7 +6,7 @@ export type CardServiceError = "CARD_NOT_FOUND" | "CARD_NOT_EDITABLE" | "CARD_CR
 
 export type CardService = {
   createBlankDraft(input: CreateCardDraftInput): Promise<Result<ConventionCard, CardServiceError>>;
-  listMyCards(ownerPlayerId: string): Promise<Result<ConventionCard[], never>>;
+  listMyCards(ownerPlayerId: string): Promise<Result<ConventionCard[], CardServiceError>>;
   getMyCard(cardId: string, ownerPlayerId: string): Promise<Result<ConventionCard, CardServiceError>>;
   autosaveDraft(input: UpdateCardDraftInput): Promise<Result<ConventionCard, CardServiceError>>;
   submitForPartnerApproval(cardId: string, ownerPlayerId: string): Promise<Result<ConventionCard, CardServiceError>>;
