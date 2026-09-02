@@ -17,11 +17,13 @@
     "drizzle-orm": "latest",
     "hono": "^4.13.5",
     "pg": "latest",
+    "ws": "^8.21.3",
     "zod": "^4.5.4"
   },
   "devDependencies": {
     "@types/node": "latest",
     "@types/pg": "latest",
+    "@types/ws": "^8.18.1",
     "dotenv": "latest",
     "drizzle-kit": "latest",
     "tsx": "^4.23.13",

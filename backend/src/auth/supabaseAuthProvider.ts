@@ -1,4 +1,9 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import WebSocket from 'ws';
+
+if (typeof globalThis.WebSocket === 'undefined') {
+  globalThis.WebSocket = WebSocket as any;
+}
 
 import { err, ok } from "../shared/result.js";
 import type { AuthProvider } from "./auth.types.js";
