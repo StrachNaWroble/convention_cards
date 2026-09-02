@@ -47,6 +47,14 @@ function cardErrorResponse(context: Parameters<typeof jsonError>[0], error: stri
     return jsonError(context, 409, error, "This card must be approved by the partner before activation.");
   }
 
+  if (error === "CARD_NOT_REVISIONABLE") {
+    return jsonError(context, 409, error, "Only rejected cards can be revised.");
+  }
+
+  if (error === "CARD_REVISION_ALREADY_EXISTS") {
+    return jsonError(context, 409, error, "This rejected card already has an open draft revision.");
+  }
+
   if (error === "CARD_NOT_READY_FOR_ACTIVATION" || error === "PARTNERSHIP_NOT_APPROVED") {
     return jsonError(context, 409, error, message ?? "This card is not ready for activation.");
   }
@@ -164,6 +172,19 @@ export function createCardRoutes(services: ApiServices): Hono<ApiBindings> {
     }
 
     return jsonOk(context, result.data);
+  });
+
+  routes.post("/:cardId/revisions", async (context) => {
+    const result = await services.cards.createRevisionFromRejectedCard(
+      context.req.param("cardId"),
+      context.get("player").id,
+    );
+
+    if (!result.ok) {
+      return cardErrorResponse(context, result.error, result.message);
+    }
+
+    return jsonOk(context, result.data, 201);
   });
 
   routes.post("/:cardId/submit-for-approval", async (context) => {

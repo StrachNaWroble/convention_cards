@@ -6,7 +6,7 @@ Responsibilities:
 
 - create a blank card draft;
 - create a draft from a template;
-- create a draft from an existing card;
+- create a draft revision from a rejected card;
 - autosave field updates;
 - submit complete cards for partner approval;
 - approve or reject submitted cards as the invited partner;

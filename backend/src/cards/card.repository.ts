@@ -5,16 +5,28 @@ import { conventionCards, partnerships } from "../db/schema.js";
 import type {
   CardStatus,
   ConventionCard,
+  ConventionCardData,
   CreateCardDraftInput,
   PartnerCardReviewStatus,
   UpdateCardDraftInput,
 } from "./card.types.js";
 
+type CreateCardDraftRecordInput = {
+  ownerPlayerId: string;
+  partnershipId: string | null;
+  sourceCardId?: string | null;
+  revisionNumber?: number;
+  title: string;
+  cardData: ConventionCardData;
+};
+
 export type CardRepository = {
-  createDraft(input: Required<Omit<CreateCardDraftInput, "partnershipId">> & { partnershipId: string | null }): Promise<ConventionCard>;
+  createDraft(input: CreateCardDraftRecordInput): Promise<ConventionCard>;
+  createDraftRevisionFromCard(sourceCard: ConventionCard): Promise<ConventionCard>;
   listByOwner(ownerPlayerId: string): Promise<ConventionCard[]>;
   listPendingReviewForPartner(playerId: string, wbfNumber: string): Promise<ConventionCard[]>;
   findOwnedCard(cardId: string, ownerPlayerId: string): Promise<ConventionCard | null>;
+  findDraftRevisionForSourceCard(sourceCardId: string, ownerPlayerId: string): Promise<ConventionCard | null>;
   findCardForPartnerReview(cardId: string, playerId: string, wbfNumber: string): Promise<ConventionCard | null>;
   updateDraft(input: UpdateCardDraftInput, updatedAt: Date): Promise<ConventionCard | null>;
   updateStatus(cardId: string, ownerPlayerId: string, status: CardStatus, updatedAt: Date): Promise<ConventionCard | null>;
@@ -35,8 +47,27 @@ export function createDrizzleCardRepository(db: Database): CardRepository {
         .values({
           ownerPlayerId: input.ownerPlayerId,
           partnershipId: input.partnershipId,
+          sourceCardId: input.sourceCardId ?? null,
+          revisionNumber: input.revisionNumber ?? 1,
           title: input.title,
           cardData: input.cardData,
+          status: "draft",
+        })
+        .returning();
+
+      return card;
+    },
+
+    async createDraftRevisionFromCard(sourceCard) {
+      const [card] = await db
+        .insert(conventionCards)
+        .values({
+          ownerPlayerId: sourceCard.ownerPlayerId,
+          partnershipId: sourceCard.partnershipId,
+          sourceCardId: sourceCard.id,
+          revisionNumber: sourceCard.revisionNumber + 1,
+          title: sourceCard.title,
+          cardData: sourceCard.cardData,
           status: "draft",
         })
         .returning();
@@ -74,6 +105,22 @@ export function createDrizzleCardRepository(db: Database): CardRepository {
         .select()
         .from(conventionCards)
         .where(and(eq(conventionCards.id, cardId), eq(conventionCards.ownerPlayerId, ownerPlayerId)))
+        .limit(1);
+
+      return card ?? null;
+    },
+
+    async findDraftRevisionForSourceCard(sourceCardId, ownerPlayerId) {
+      const [card] = await db
+        .select()
+        .from(conventionCards)
+        .where(
+          and(
+            eq(conventionCards.sourceCardId, sourceCardId),
+            eq(conventionCards.ownerPlayerId, ownerPlayerId),
+            eq(conventionCards.status, "draft"),
+          ),
+        )
         .limit(1);
 
       return card ?? null;

@@ -14,6 +14,8 @@ function buildCard(overrides: Partial<ConventionCard> = {}): ConventionCard {
     id: "card-1",
     ownerPlayerId: "player-1",
     partnershipId: "partnership-1",
+    sourceCardId: null,
+    revisionNumber: 1,
     title: "Active card",
     status: "active",
     cardData: { openings: { oneClub: "2+" } },
@@ -62,6 +64,9 @@ function createCardRepository(seed: ConventionCard[] = []): CardRepository {
     async createDraft() {
       throw new Error("Not used in sharing tests.");
     },
+    async createDraftRevisionFromCard() {
+      throw new Error("Not used in sharing tests.");
+    },
     async listByOwner() {
       return [];
     },
@@ -70,6 +75,9 @@ function createCardRepository(seed: ConventionCard[] = []): CardRepository {
     },
     async findOwnedCard(cardId, ownerPlayerId) {
       return seed.find((card) => card.id === cardId && card.ownerPlayerId === ownerPlayerId) ?? null;
+    },
+    async findDraftRevisionForSourceCard() {
+      return null;
     },
     async findCardForPartnerReview() {
       return null;

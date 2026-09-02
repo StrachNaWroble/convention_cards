@@ -10,6 +10,8 @@ function buildCard(overrides: Partial<ConventionCard> = {}): ConventionCard {
     id: "card-1",
     ownerPlayerId: "player-1",
     partnershipId: "partnership-1",
+    sourceCardId: null,
+    revisionNumber: 1,
     title: "2/1 with Alex",
     status: "pending_partner_approval",
     cardData: {
