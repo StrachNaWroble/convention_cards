@@ -60,8 +60,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading = fals
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
           </svg>
         </div>
-        <h2 className="text-3xl font-extrabold text-white tracking-tight">Witaj ponownie</h2>
-        <p className="mt-2 text-sm text-gray-300 font-medium">Zaloguj się, aby zarządzać kartami konwencyjnymi</p>
+        <h2 className="text-3xl font-extrabold text-white tracking-tight">Welcome back</h2>
+        <p className="mt-2 text-sm text-gray-300 font-medium">Log in to manage your convention cards</p>
       </div>
 
       <form className="relative z-10 mt-8 space-y-6" onSubmit={handleSubmit} noValidate>
@@ -94,7 +94,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading = fals
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-200 ml-1 mb-1">
-              Hasło
+              Password
             </label>
             <input
               id="password"
@@ -122,13 +122,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading = fals
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 rounded bg-white/10"
             />
             <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-300">
-              Zapamiętaj mnie
+              Remember me
             </label>
           </div>
 
           <div className="text-sm">
             <a href="#" className="font-semibold text-blue-400 hover:text-blue-300 transition-colors">
-              Zapomniałeś hasła?
+              Forgot password?
             </a>
           </div>
         </div>
@@ -151,7 +151,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading = fals
                 </svg>
               </span>
             )}
-            {isLoading ? 'Logowanie...' : 'Zaloguj się'}
+            {isLoading ? 'Signing in...' : 'Sign in'}
           </button>
         </div>
       </form>
