@@ -41,3 +41,17 @@ Authorization: Bearer <access-token>
 - `PATCH /cards/:cardId`: autosave draft title and/or card data.
 - `POST /cards/:cardId/submit-for-approval`: move a draft into partner approval.
 - `POST /cards/:cardId/archive`: archive a card.
+
+### Partnerships
+
+All partnership routes require:
+
+```text
+Authorization: Bearer <access-token>
+```
+
+- `GET /partnerships`: list partnerships where the signed-in player is the owner or invited partner.
+- `POST /partnerships`: create a pending partnership by partner WBF number.
+- `POST /partnerships/:partnershipId/approve`: approve an invitation as the partner.
+- `POST /partnerships/:partnershipId/decline`: decline an invitation as the partner.
+- `POST /partnerships/:partnershipId/archive`: archive a partnership visible to the signed-in player.
