@@ -91,6 +91,9 @@ function createPartnershipRepository(seed: Partnership[] = []): PartnershipRepos
           partnership.partnerWbfNumber === wbfNumber,
       );
     },
+    async findById(partnershipId) {
+      return partnerships.find((partnership) => partnership.id === partnershipId) ?? null;
+    },
     async findForParticipant(partnershipId, playerId, wbfNumber) {
       return (
         partnerships.find(

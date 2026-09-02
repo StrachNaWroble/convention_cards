@@ -68,6 +68,7 @@ function createCardService(): CardService {
     getMyCard: vi.fn(),
     autosaveDraft: vi.fn(),
     submitForPartnerApproval: vi.fn(),
+    activateCard: vi.fn(),
     archiveCard: vi.fn(),
   };
 }

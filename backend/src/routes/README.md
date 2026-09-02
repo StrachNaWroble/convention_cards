@@ -40,6 +40,7 @@ Authorization: Bearer <access-token>
 - `GET /cards/:cardId`: load one owned card.
 - `PATCH /cards/:cardId`: autosave draft title and/or card data.
 - `POST /cards/:cardId/submit-for-approval`: move a draft into partner approval.
+- `POST /cards/:cardId/activate`: activate a submitted card after validation and partner approval.
 - `POST /cards/:cardId/archive`: archive a card.
 
 ### Partnerships

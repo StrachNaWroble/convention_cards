@@ -10,6 +10,7 @@ import { createDrizzleCardRepository } from "./cards/card.repository.js";
 import { createApp } from "./app.js";
 import { createDrizzlePartnershipRepository, createPartnershipService } from "./partnerships/index.js";
 import { createDrizzlePlayerRepository } from "./players/player.repository.js";
+import { createCardValidationService } from "./validation/index.js";
 
 const env = loadAppEnv();
 const database = createDatabaseClient(env.databaseUrl, { ssl: true });
@@ -23,6 +24,8 @@ const auth = createAuthService({
 });
 const cards = createCardService({
   cards: cardRepository,
+  partnerships: partnershipRepository,
+  validation: createCardValidationService(),
 });
 const partnerships = createPartnershipService({
   partnerships: partnershipRepository,
