@@ -38,6 +38,8 @@ function buildCard(overrides: Partial<ConventionCard> = {}): ConventionCard {
     id: "card-1",
     ownerPlayerId: "player-1",
     partnershipId: null,
+    sourceCardId: null,
+    revisionNumber: 1,
     title: "Untitled card",
     status: "draft",
     cardData: {},
@@ -76,6 +78,9 @@ function createCardService(card = buildCard()): CardService {
     listMyCards: vi.fn(async () => ok([card])),
     listCardsForPartnerReview: vi.fn(async () => ok([buildCard({ status: "pending_partner_approval" })])),
     getMyCard: vi.fn(async () => ok(card)),
+    createRevisionFromRejectedCard: vi.fn(async () =>
+      ok(buildCard({ ...card, id: "card-2", sourceCardId: card.id, revisionNumber: card.revisionNumber + 1 })),
+    ),
     autosaveDraft: vi.fn(async () => ok(card)),
     submitForPartnerApproval: vi.fn(async () => ok(buildCard({ ...card, status: "pending_partner_approval" }))),
     approveCardAsPartner: vi.fn(async () => ok(buildCard({ ...card, status: "partner_approved" }))),
@@ -300,6 +305,66 @@ describe("card routes", () => {
       error: {
         code: "CARD_NOT_EDITABLE",
         message: "This card cannot be edited in its current status.",
+      },
+    });
+  });
+
+  it("creates a draft revision from a rejected owned card", async () => {
+    const cards = createCardService();
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards,
+      partnerships: createPartnershipService(),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/cards/card-1/revisions", {
+      method: "POST",
+      headers: {
+        authorization: "Bearer access-token",
+      },
+    });
+
+    expect(response.status).toBe(201);
+    expect(cards.createRevisionFromRejectedCard).toHaveBeenCalledWith("card-1", "player-1");
+    expect(await response.json()).toMatchObject({
+      data: {
+        id: "card-2",
+        sourceCardId: "card-1",
+        revisionNumber: 2,
+        status: "draft",
+      },
+    });
+  });
+
+  it("maps duplicate draft revision requests to a conflict response", async () => {
+    const cards = createCardService();
+    vi.mocked(cards.createRevisionFromRejectedCard).mockResolvedValueOnce(err("CARD_REVISION_ALREADY_EXISTS"));
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards,
+      partnerships: createPartnershipService(),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/cards/card-1/revisions", {
+      method: "POST",
+      headers: {
+        authorization: "Bearer access-token",
+      },
+    });
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      error: {
+        code: "CARD_REVISION_ALREADY_EXISTS",
+        message: "This rejected card already has an open draft revision.",
       },
     });
   });

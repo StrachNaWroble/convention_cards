@@ -14,6 +14,8 @@ export type CardServiceError =
   | "CARD_NOT_READY_FOR_ACTIVATION"
   | "CARD_NOT_APPROVED_BY_PARTNER"
   | "CARD_NOT_PENDING_REVIEW"
+  | "CARD_NOT_REVISIONABLE"
+  | "CARD_REVISION_ALREADY_EXISTS"
   | "PARTNERSHIP_NOT_APPROVED"
   | "REJECTION_REASON_TOO_LONG";
 
@@ -22,6 +24,7 @@ export type CardService = {
   listMyCards(ownerPlayerId: string): Promise<Result<ConventionCard[], CardServiceError>>;
   listCardsForPartnerReview(player: Player): Promise<Result<ConventionCard[], CardServiceError>>;
   getMyCard(cardId: string, ownerPlayerId: string): Promise<Result<ConventionCard, CardServiceError>>;
+  createRevisionFromRejectedCard(cardId: string, ownerPlayerId: string): Promise<Result<ConventionCard, CardServiceError>>;
   autosaveDraft(input: UpdateCardDraftInput): Promise<Result<ConventionCard, CardServiceError>>;
   submitForPartnerApproval(cardId: string, ownerPlayerId: string): Promise<Result<ConventionCard, CardServiceError>>;
   approveCardAsPartner(cardId: string, player: Player): Promise<Result<ConventionCard, CardServiceError>>;
@@ -74,6 +77,30 @@ export function createCardService({ cards, partnerships, validation, now = () =>
       }
 
       return ok(card);
+    },
+
+    async createRevisionFromRejectedCard(cardId, ownerPlayerId) {
+      const existingCard = await cards.findOwnedCard(cardId, ownerPlayerId);
+
+      if (!existingCard) {
+        return err("CARD_NOT_FOUND");
+      }
+
+      if (existingCard.status !== "partner_rejected") {
+        return err("CARD_NOT_REVISIONABLE");
+      }
+
+      const existingRevision = await cards.findDraftRevisionForSourceCard(existingCard.id, ownerPlayerId);
+
+      if (existingRevision) {
+        return err("CARD_REVISION_ALREADY_EXISTS");
+      }
+
+      try {
+        return ok(await cards.createDraftRevisionFromCard(existingCard));
+      } catch (error) {
+        return err("CARD_CREATE_FAILED", error instanceof Error ? error.message : "Could not create card revision.");
+      }
     },
 
     async autosaveDraft(input) {

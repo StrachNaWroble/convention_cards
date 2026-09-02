@@ -45,6 +45,7 @@ Authorization: Bearer <access-token>
 - `POST /cards/from-template`: create a draft from a card template.
 - `GET /cards/:cardId`: load one owned card.
 - `PATCH /cards/:cardId`: autosave draft title and/or card data.
+- `POST /cards/:cardId/revisions`: create an editable draft revision from a rejected card.
 - `POST /cards/:cardId/submit-for-approval`: move a draft into partner approval.
 - `POST /cards/:cardId/review/approve`: approve a submitted card as the invited partner.
 - `POST /cards/:cardId/review/reject`: reject a submitted card as the invited partner.

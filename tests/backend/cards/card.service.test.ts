@@ -15,6 +15,8 @@ function buildCard(overrides: Partial<ConventionCard> = {}): ConventionCard {
     id: "card-1",
     ownerPlayerId: "player-1",
     partnershipId: null,
+    sourceCardId: null,
+    revisionNumber: 1,
     title: "Untitled card",
     status: "draft",
     cardData: {},
@@ -75,8 +77,25 @@ function createCardRepository(seed: ConventionCard[] = []): CardRepository {
         id: `card-${cards.length + 1}`,
         ownerPlayerId: input.ownerPlayerId,
         partnershipId: input.partnershipId,
+        sourceCardId: input.sourceCardId ?? null,
+        revisionNumber: input.revisionNumber ?? 1,
         title: input.title,
         cardData: input.cardData,
+      });
+
+      cards.push(card);
+      return card;
+    },
+
+    async createDraftRevisionFromCard(sourceCard) {
+      const card = buildCard({
+        id: `card-${cards.length + 1}`,
+        ownerPlayerId: sourceCard.ownerPlayerId,
+        partnershipId: sourceCard.partnershipId,
+        sourceCardId: sourceCard.id,
+        revisionNumber: sourceCard.revisionNumber + 1,
+        title: sourceCard.title,
+        cardData: sourceCard.cardData,
       });
 
       cards.push(card);
@@ -103,6 +122,13 @@ function createCardRepository(seed: ConventionCard[] = []): CardRepository {
 
     async findOwnedCard(cardId, ownerPlayerId) {
       return cards.find((card) => card.id === cardId && card.ownerPlayerId === ownerPlayerId) ?? null;
+    },
+
+    async findDraftRevisionForSourceCard(sourceCardId, ownerPlayerId) {
+      return cards.find(
+        (card) =>
+          card.sourceCardId === sourceCardId && card.ownerPlayerId === ownerPlayerId && card.status === "draft",
+      ) ?? null;
     },
 
     async findCardForPartnerReview(cardId, playerId, wbfNumber) {
@@ -279,6 +305,78 @@ describe("card service", () => {
     });
 
     expect(result).toEqual({ ok: false, error: "CARD_NOT_EDITABLE" });
+  });
+
+  it("creates a draft revision from a rejected card", async () => {
+    const repository = createCardRepository([
+      buildCard({
+        status: "partner_rejected",
+        partnershipId: "partnership-1",
+        title: "Rejected card",
+        cardData: { openings: { oneClub: "2+" } },
+        partnerReviewedByPlayerId: "player-2",
+        partnerReviewedAt: new Date("2026-09-02T13:30:00.000Z"),
+        partnerRejectionReason: "Please check leads.",
+      }),
+    ]);
+    const service = createCardService({ cards: repository });
+
+    const result = await service.createRevisionFromRejectedCard("card-1", "player-1");
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.data).toMatchObject({
+      id: "card-2",
+      ownerPlayerId: "player-1",
+      partnershipId: "partnership-1",
+      sourceCardId: "card-1",
+      revisionNumber: 2,
+      title: "Rejected card",
+      status: "draft",
+      cardData: { openings: { oneClub: "2+" } },
+      partnerReviewedByPlayerId: null,
+      partnerReviewedAt: null,
+      partnerRejectionReason: null,
+    });
+  });
+
+  it("blocks revisions for cards that were not rejected", async () => {
+    const repository = createCardRepository([
+      buildCard({
+        status: "active",
+        partnershipId: "partnership-1",
+        cardData: { openings: { oneClub: "2+" } },
+      }),
+    ]);
+    const service = createCardService({ cards: repository });
+
+    const result = await service.createRevisionFromRejectedCard("card-1", "player-1");
+
+    expect(result).toEqual({ ok: false, error: "CARD_NOT_REVISIONABLE" });
+  });
+
+  it("blocks creating a second open draft revision from the same rejected card", async () => {
+    const repository = createCardRepository([
+      buildCard({
+        status: "partner_rejected",
+        partnershipId: "partnership-1",
+        partnerReviewedByPlayerId: "player-2",
+        partnerReviewedAt: new Date("2026-09-02T13:30:00.000Z"),
+      }),
+      buildCard({
+        id: "card-2",
+        sourceCardId: "card-1",
+        revisionNumber: 2,
+        status: "draft",
+        partnershipId: "partnership-1",
+      }),
+    ]);
+    const service = createCardService({ cards: repository });
+
+    const result = await service.createRevisionFromRejectedCard("card-1", "player-1");
+
+    expect(result).toEqual({ ok: false, error: "CARD_REVISION_ALREADY_EXISTS" });
   });
 
   it("submits a draft for partner approval", async () => {

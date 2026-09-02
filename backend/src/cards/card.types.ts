@@ -14,6 +14,8 @@ export type ConventionCard = {
   id: string;
   ownerPlayerId: string;
   partnershipId: string | null;
+  sourceCardId: string | null;
+  revisionNumber: number;
   title: string;
   status: CardStatus;
   cardData: ConventionCardData;
@@ -30,6 +32,8 @@ export type ConventionCard = {
 export type CreateCardDraftInput = {
   ownerPlayerId: string;
   partnershipId?: string | null;
+  sourceCardId?: string | null;
+  revisionNumber?: number;
   title?: string;
   cardData?: ConventionCardData;
 };

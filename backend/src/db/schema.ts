@@ -1,6 +1,7 @@
 import {
   boolean,
   index,
+  integer,
   jsonb,
   pgEnum,
   pgTable,
@@ -8,6 +9,7 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 
 import type { ConventionCardData } from "../cards/card.types.js";
@@ -86,6 +88,8 @@ export const conventionCards = pgTable(
       .notNull()
       .references(() => players.id, { onDelete: "cascade" }),
     partnershipId: uuid("partnership_id").references(() => partnerships.id, { onDelete: "set null" }),
+    sourceCardId: uuid("source_card_id").references((): AnyPgColumn => conventionCards.id, { onDelete: "set null" }),
+    revisionNumber: integer("revision_number").notNull().default(1),
     title: text("title").notNull().default("Untitled card"),
     status: cardStatusEnum("status").notNull().default("draft"),
     cardData: jsonb("card_data").$type<ConventionCardData>().notNull(),
@@ -101,6 +105,7 @@ export const conventionCards = pgTable(
   (table) => ({
     ownerIndex: index("convention_cards_owner_player_id_idx").on(table.ownerPlayerId),
     partnershipIndex: index("convention_cards_partnership_id_idx").on(table.partnershipId),
+    sourceCardIndex: index("convention_cards_source_card_id_idx").on(table.sourceCardId),
     partnerReviewIndex: index("convention_cards_partner_reviewed_by_player_id_idx").on(table.partnerReviewedByPlayerId),
     statusIndex: index("convention_cards_status_idx").on(table.status),
   }),
