@@ -13,10 +13,14 @@ Keep validation rules close to a shared card schema so frontend and backend beha
 
 ## Current Implementation
 
-The first backend validation service enforces structural activation requirements:
+The backend validation service enforces activation requirements:
 
 - the card has a title;
 - the card is linked to a partnership;
-- the card contains some structured card data.
+- the card data is an object;
+- only recognized WBF top-level sections are used;
+- each WBF section is a structured object;
+- at least one WBF card field has meaningful content;
+- nested card values remain JSON-compatible and reasonably bounded.
 
-Detailed WBF-required field validation should replace or extend this once the shared card schema is implemented.
+Draft autosave remains intentionally permissive so players can save incomplete work.
