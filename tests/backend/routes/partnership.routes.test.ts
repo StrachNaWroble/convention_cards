@@ -8,6 +8,7 @@ import type { PartnershipService } from "../../../backend/src/partnerships/partn
 import type { Partnership } from "../../../backend/src/partnerships/partnership.types.js";
 import type { Player } from "../../../backend/src/players/player.types.js";
 import { err, ok } from "../../../backend/src/shared/result.js";
+import type { TemplateService } from "../../../backend/src/templates/index.js";
 import type { WbfVerificationService } from "../../../backend/src/wbf-verification/index.js";
 
 function buildPlayer(): Player {
@@ -84,6 +85,13 @@ function createPartnershipService(partnership = buildPartnership()): Partnership
   };
 }
 
+function createTemplateService(): TemplateService {
+  return {
+    listTemplates: vi.fn(async () => ok([])),
+    getTemplate: vi.fn(),
+  };
+}
+
 function createWbfVerificationService(): WbfVerificationService {
   return {
     verifyWbfNumber: vi.fn(async (wbfNumber: string) => ({
@@ -102,6 +110,7 @@ describe("partnership routes", () => {
       authProvider: createAuthProvider(),
       cards: createCardService(),
       partnerships: createPartnershipService(),
+      templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
 
@@ -117,6 +126,7 @@ describe("partnership routes", () => {
       authProvider: createAuthProvider(),
       cards: createCardService(),
       partnerships,
+      templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
 
@@ -145,6 +155,7 @@ describe("partnership routes", () => {
       authProvider: createAuthProvider(),
       cards: createCardService(),
       partnerships,
+      templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
 
@@ -166,6 +177,7 @@ describe("partnership routes", () => {
       authProvider: createAuthProvider(),
       cards: createCardService(),
       partnerships,
+      templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
 
@@ -188,6 +200,7 @@ describe("partnership routes", () => {
       authProvider: createAuthProvider(),
       cards: createCardService(),
       partnerships,
+      templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
 

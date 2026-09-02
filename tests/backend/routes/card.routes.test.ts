@@ -8,6 +8,7 @@ import type { ConventionCard } from "../../../backend/src/cards/card.types.js";
 import type { PartnershipService } from "../../../backend/src/partnerships/partnership.service.js";
 import type { Player } from "../../../backend/src/players/player.types.js";
 import { err, ok } from "../../../backend/src/shared/result.js";
+import type { TemplateService } from "../../../backend/src/templates/index.js";
 import type { WbfVerificationService } from "../../../backend/src/wbf-verification/index.js";
 
 function buildPlayer(): Player {
@@ -87,6 +88,24 @@ function createPartnershipService(): PartnershipService {
   };
 }
 
+function createTemplateService(): TemplateService {
+  return {
+    listTemplates: vi.fn(async () => ok([])),
+    getTemplate: vi.fn(async () =>
+      ok({
+        id: "template-1",
+        slug: "blank-wbf-card",
+        name: "Blank WBF Card",
+        description: "Blank template",
+        cardData: { meta: { format: "wbf" } },
+        isSystemTemplate: true,
+        createdAt: new Date("2026-09-02T10:00:00.000Z"),
+        updatedAt: new Date("2026-09-02T10:00:00.000Z"),
+      }),
+    ),
+  };
+}
+
 function createWbfVerificationService(): WbfVerificationService {
   return {
     verifyWbfNumber: vi.fn(async (wbfNumber: string) => ({
@@ -105,6 +124,7 @@ describe("card routes", () => {
       authProvider: createAuthProvider(),
       cards: createCardService(),
       partnerships: createPartnershipService(),
+      templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
 
@@ -120,6 +140,7 @@ describe("card routes", () => {
       authProvider: createAuthProvider(),
       cards,
       partnerships: createPartnershipService(),
+      templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
 
@@ -140,6 +161,7 @@ describe("card routes", () => {
       authProvider: createAuthProvider(),
       cards,
       partnerships: createPartnershipService(),
+      templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
 
@@ -172,6 +194,40 @@ describe("card routes", () => {
     });
   });
 
+  it("creates a draft from a template for the signed-in player", async () => {
+    const cards = createCardService();
+    const templates = createTemplateService();
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards,
+      partnerships: createPartnershipService(),
+      templates,
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/cards/from-template", {
+      method: "POST",
+      body: JSON.stringify({
+        templateSlug: "blank-wbf-card",
+        title: "Card from template",
+      }),
+      headers: {
+        authorization: "Bearer access-token",
+        "content-type": "application/json",
+      },
+    });
+
+    expect(response.status).toBe(201);
+    expect(templates.getTemplate).toHaveBeenCalledWith("blank-wbf-card");
+    expect(cards.createBlankDraft).toHaveBeenCalledWith({
+      ownerPlayerId: "player-1",
+      partnershipId: undefined,
+      title: "Card from template",
+      cardData: { meta: { format: "wbf" } },
+    });
+  });
+
   it("maps non-editable draft saves to a conflict response", async () => {
     const cards = createCardService();
     vi.mocked(cards.autosaveDraft).mockResolvedValueOnce(err("CARD_NOT_EDITABLE"));
@@ -180,6 +236,7 @@ describe("card routes", () => {
       authProvider: createAuthProvider(),
       cards,
       partnerships: createPartnershipService(),
+      templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
 
@@ -210,6 +267,7 @@ describe("card routes", () => {
       authProvider: createAuthProvider(),
       cards,
       partnerships: createPartnershipService(),
+      templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
 

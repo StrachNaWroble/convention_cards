@@ -7,6 +7,7 @@ import type { CardService } from "../../../backend/src/cards/card.service.js";
 import type { PartnershipService } from "../../../backend/src/partnerships/partnership.service.js";
 import type { Player } from "../../../backend/src/players/player.types.js";
 import { ok } from "../../../backend/src/shared/result.js";
+import type { TemplateService } from "../../../backend/src/templates/index.js";
 import type { WbfVerificationService } from "../../../backend/src/wbf-verification/index.js";
 
 function buildPlayer(): Player {
@@ -67,6 +68,13 @@ function createPartnershipService(): PartnershipService {
   };
 }
 
+function createTemplateService(): TemplateService {
+  return {
+    listTemplates: vi.fn(async () => ok([])),
+    getTemplate: vi.fn(),
+  };
+}
+
 describe("WBF verification routes", () => {
   it("verifies a submitted WBF number", async () => {
     const wbfVerification: WbfVerificationService = {
@@ -83,6 +91,7 @@ describe("WBF verification routes", () => {
       authProvider: createAuthProvider(),
       cards: createCardService(),
       partnerships: createPartnershipService(),
+      templates: createTemplateService(),
       wbfVerification,
     });
 

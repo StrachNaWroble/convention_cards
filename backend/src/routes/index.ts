@@ -4,4 +4,5 @@ export * from "./auth.routes.js";
 export * from "./card.routes.js";
 export * from "./partnership.routes.js";
 export * from "./responses.js";
+export * from "./template.routes.js";
 export * from "./wbfVerification.routes.js";

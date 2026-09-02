@@ -14,6 +14,12 @@ const createCardSchema = z.object({
   cardData: cardDataSchema.optional(),
 });
 
+const createCardFromTemplateSchema = z.object({
+  templateSlug: z.string().min(1, "Template slug is required."),
+  title: z.string().min(1).optional(),
+  partnershipId: z.string().uuid().nullable().optional(),
+});
+
 const updateCardSchema = z.object({
   title: z.string().min(1).optional(),
   cardData: cardDataSchema.optional(),
@@ -64,6 +70,33 @@ export function createCardRoutes(services: ApiServices): Hono<ApiBindings> {
       partnershipId: body.data.partnershipId,
       title: body.data.title,
       cardData: body.data.cardData,
+    });
+
+    if (!result.ok) {
+      return cardErrorResponse(context, result.error, result.message);
+    }
+
+    return jsonOk(context, result.data, 201);
+  });
+
+  routes.post("/from-template", async (context) => {
+    const body = await parseJsonBody(context, createCardFromTemplateSchema);
+
+    if (!body.ok) {
+      return body.response;
+    }
+
+    const template = await services.templates.getTemplate(body.data.templateSlug);
+
+    if (!template.ok) {
+      return jsonError(context, 404, template.error, "Template was not found.");
+    }
+
+    const result = await services.cards.createBlankDraft({
+      ownerPlayerId: context.get("player").id,
+      partnershipId: body.data.partnershipId,
+      title: body.data.title ?? template.data.name,
+      cardData: template.data.cardData,
     });
 
     if (!result.ok) {

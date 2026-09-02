@@ -1,16 +1,14 @@
 import "dotenv/config";
 
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
-import { basename } from "node:path";
+import { readdir, readFile } from "node:fs/promises";
+import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 
 const { Pool } = pg;
 
-const migrationPath = fileURLToPath(
-  new URL("../backend/src/db/migrations/0001_initial_auth_and_cards.sql", import.meta.url),
-);
+const migrationsDir = fileURLToPath(new URL("../backend/src/db/migrations", import.meta.url));
 
 function requireEnv(name) {
   const value = process.env[name];
@@ -24,9 +22,6 @@ function requireEnv(name) {
 
 async function main() {
   const databaseUrl = requireEnv("DATABASE_URL");
-  const sql = await readFile(migrationPath, "utf8");
-  const name = basename(migrationPath);
-  const checksum = createHash("sha256").update(sql).digest("hex");
   const pool = new Pool({
     connectionString: databaseUrl,
     ssl: { rejectUnauthorized: false },
@@ -41,23 +36,32 @@ async function main() {
       )
     `);
 
-    const existing = await pool.query("SELECT checksum FROM app_migrations WHERE name = $1", [name]);
+    const migrationNames = (await readdir(migrationsDir))
+      .filter((entry) => extname(entry) === ".sql")
+      .sort();
 
-    if (existing.rowCount && existing.rows[0].checksum === checksum) {
-      console.log(`Migration already applied: ${name}`);
-      return;
+    for (const name of migrationNames) {
+      const migrationPath = join(migrationsDir, name);
+      const sql = await readFile(migrationPath, "utf8");
+      const checksum = createHash("sha256").update(sql).digest("hex");
+      const existing = await pool.query("SELECT checksum FROM app_migrations WHERE name = $1", [name]);
+
+      if (existing.rowCount && existing.rows[0].checksum === checksum) {
+        console.log(`Migration already applied: ${name}`);
+        continue;
+      }
+
+      if (existing.rowCount) {
+        throw new Error(`Migration ${name} changed after it was applied.`);
+      }
+
+      await pool.query("BEGIN");
+      await pool.query(sql);
+      await pool.query("INSERT INTO app_migrations (name, checksum) VALUES ($1, $2)", [name, checksum]);
+      await pool.query("COMMIT");
+
+      console.log(`Migration applied: ${name}`);
     }
-
-    if (existing.rowCount) {
-      throw new Error(`Migration ${name} changed after it was applied.`);
-    }
-
-    await pool.query("BEGIN");
-    await pool.query(sql);
-    await pool.query("INSERT INTO app_migrations (name, checksum) VALUES ($1, $2)", [name, checksum]);
-    await pool.query("COMMIT");
-
-    console.log(`Migration applied: ${name}`);
   } catch (error) {
     await pool.query("ROLLBACK").catch(() => undefined);
     throw error;

@@ -7,6 +7,7 @@ import type { CardService } from "../../../backend/src/cards/card.service.js";
 import type { PartnershipService } from "../../../backend/src/partnerships/partnership.service.js";
 import type { Player } from "../../../backend/src/players/player.types.js";
 import { err, ok } from "../../../backend/src/shared/result.js";
+import type { TemplateService } from "../../../backend/src/templates/index.js";
 import type { WbfVerificationService } from "../../../backend/src/wbf-verification/index.js";
 
 function buildPlayer(overrides: Partial<Player> = {}): Player {
@@ -85,6 +86,13 @@ function createPartnershipService(): PartnershipService {
   };
 }
 
+function createTemplateService(): TemplateService {
+  return {
+    listTemplates: vi.fn(async () => ok([])),
+    getTemplate: vi.fn(),
+  };
+}
+
 function createWbfVerificationService(): WbfVerificationService {
   return {
     verifyWbfNumber: vi.fn(async (wbfNumber: string) => ({
@@ -104,6 +112,7 @@ describe("auth routes", () => {
       authProvider: createAuthProvider(),
       cards: createCardService(),
       partnerships: createPartnershipService(),
+      templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
 
@@ -135,6 +144,7 @@ describe("auth routes", () => {
       authProvider: createAuthProvider(),
       cards: createCardService(),
       partnerships: createPartnershipService(),
+      templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
 
@@ -166,6 +176,7 @@ describe("auth routes", () => {
       authProvider: createAuthProvider(),
       cards: createCardService(),
       partnerships: createPartnershipService(),
+      templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
 
@@ -202,6 +213,7 @@ describe("auth routes", () => {
       authProvider,
       cards: createCardService(),
       partnerships: createPartnershipService(),
+      templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
 
