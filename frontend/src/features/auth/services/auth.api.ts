@@ -38,27 +38,27 @@ export const authApi = {
       wbfNumber: data.wbfNumber,
       password: data.password,
     };
-    return api.post<RegisterResponse>('/register', payload);
+    return api.post<RegisterResponse>('/auth/register', payload);
   },
 
   /**
    * Loguje użytkownika po WBF Number i haśle
    */
   login: async (data: LoginFormData): Promise<LoginResponse> => {
-    return api.post<LoginResponse>('/login', data);
+    return api.post<LoginResponse>('/auth/login', data);
   },
 
   /**
    * Wylogowuje użytkownika
    */
   logout: async (): Promise<{ signedOut: boolean }> => {
-    return api.post<{ signedOut: boolean }>('/logout', {});
+    return api.post<{ signedOut: boolean }>('/auth/logout', {});
   },
 
   /**
    * Pobiera aktualnie zalogowanego gracza (wymaga tokena)
    */
   getMe: async (): Promise<{ player: Player }> => {
-    return api.get<{ player: Player }>('/me');
+    return api.get<{ player: Player }>('/auth/me');
   },
 };

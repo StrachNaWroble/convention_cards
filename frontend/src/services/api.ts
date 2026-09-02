@@ -53,6 +53,11 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     throw new ApiError(errorMessage, errorCode, response.status);
   }
 
+  // Jeśli serwer zwrócił odp. ok, a dane są zapakowane w obiekt { data: ... }, rozpakuj je
+  if (data && data.data !== undefined) {
+    return data.data;
+  }
+  
   return data;
 }
 
