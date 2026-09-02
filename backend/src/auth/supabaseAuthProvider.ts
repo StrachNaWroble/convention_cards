@@ -30,7 +30,7 @@ export function createSupabaseAuthProvider(config: SupabaseConfig): AuthProvider
         const { data, error } = await adminClient.auth.admin.createUser({
           email,
           password,
-          email_confirm: false,
+          email_confirm: true,
         });
 
         if (error) {
@@ -75,7 +75,30 @@ export function createSupabaseAuthProvider(config: SupabaseConfig): AuthProvider
       });
     },
 
-    async signOut() {
+    async getUserByAccessToken(accessToken) {
+      const { data, error } = await publicClient.auth.getUser(accessToken);
+
+      if (error || !data.user?.id) {
+        return err("AUTH_SESSION_INVALID", error?.message);
+      }
+
+      return ok({
+        id: data.user.id,
+        email: data.user.email,
+      });
+    },
+
+    async signOut(accessToken) {
+      if (accessToken && adminClient) {
+        const { error } = await adminClient.auth.admin.signOut(accessToken);
+
+        if (error) {
+          return err("AUTH_SIGN_OUT_FAILED", error.message);
+        }
+
+        return ok(undefined);
+      }
+
       const { error } = await publicClient.auth.signOut();
 
       if (error) {

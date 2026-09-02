@@ -10,8 +10,16 @@ export type DatabaseClient = {
   pool: Pool;
 };
 
-export function createDatabaseClient(databaseUrl: string): DatabaseClient {
-  const pool = new Pool({ connectionString: databaseUrl });
+export type DatabaseClientOptions = {
+  ssl?: boolean;
+};
+
+export function createDatabaseClient(databaseUrl: string, options: DatabaseClientOptions = {}): DatabaseClient {
+  const pool = new Pool({
+    connectionString: databaseUrl,
+    ssl: options.ssl ? { rejectUnauthorized: false } : undefined,
+  });
+
   return {
     db: drizzle(pool, { schema }),
     pool,
