@@ -7,6 +7,7 @@ import type { CardService } from "../../../backend/src/cards/card.service.js";
 import type { ConventionCard } from "../../../backend/src/cards/card.types.js";
 import type { PartnershipService } from "../../../backend/src/partnerships/partnership.service.js";
 import type { Player } from "../../../backend/src/players/player.types.js";
+import type { SharingService } from "../../../backend/src/sharing/index.js";
 import { err, ok } from "../../../backend/src/shared/result.js";
 import type { TemplateService } from "../../../backend/src/templates/index.js";
 import type { WbfVerificationService } from "../../../backend/src/wbf-verification/index.js";
@@ -106,6 +107,36 @@ function createTemplateService(): TemplateService {
   };
 }
 
+function createSharingService(): SharingService {
+  return {
+    createShareLink: vi.fn(async () =>
+      ok({
+        link: {
+          id: "share-link-1",
+          cardId: "card-1",
+          expiresAt: null,
+          revokedAt: null,
+          createdAt: new Date("2026-09-02T10:00:00.000Z"),
+        },
+        token: "raw-share-token",
+      }),
+    ),
+    listShareLinks: vi.fn(async () =>
+      ok([
+        {
+          id: "share-link-1",
+          cardId: "card-1",
+          expiresAt: null,
+          revokedAt: null,
+          createdAt: new Date("2026-09-02T10:00:00.000Z"),
+        },
+      ]),
+    ),
+    revokeShareLink: vi.fn(),
+    getPublicSharedCard: vi.fn(),
+  };
+}
+
 function createWbfVerificationService(): WbfVerificationService {
   return {
     verifyWbfNumber: vi.fn(async (wbfNumber: string) => ({
@@ -124,6 +155,7 @@ describe("card routes", () => {
       authProvider: createAuthProvider(),
       cards: createCardService(),
       partnerships: createPartnershipService(),
+      sharing: createSharingService(),
       templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
@@ -140,6 +172,7 @@ describe("card routes", () => {
       authProvider: createAuthProvider(),
       cards,
       partnerships: createPartnershipService(),
+      sharing: createSharingService(),
       templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
@@ -161,6 +194,7 @@ describe("card routes", () => {
       authProvider: createAuthProvider(),
       cards,
       partnerships: createPartnershipService(),
+      sharing: createSharingService(),
       templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
@@ -202,6 +236,7 @@ describe("card routes", () => {
       authProvider: createAuthProvider(),
       cards,
       partnerships: createPartnershipService(),
+      sharing: createSharingService(),
       templates,
       wbfVerification: createWbfVerificationService(),
     });
@@ -236,6 +271,7 @@ describe("card routes", () => {
       authProvider: createAuthProvider(),
       cards,
       partnerships: createPartnershipService(),
+      sharing: createSharingService(),
       templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
@@ -267,6 +303,7 @@ describe("card routes", () => {
       authProvider: createAuthProvider(),
       cards,
       partnerships: createPartnershipService(),
+      sharing: createSharingService(),
       templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
@@ -280,5 +317,61 @@ describe("card routes", () => {
 
     expect(response.status).toBe(200);
     expect(cards.activateCard).toHaveBeenCalledWith("card-1", "player-1");
+  });
+
+  it("creates a share link for an owned card", async () => {
+    const sharing = createSharingService();
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards: createCardService(),
+      partnerships: createPartnershipService(),
+      sharing,
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/cards/card-1/share-links", {
+      method: "POST",
+      body: JSON.stringify({}),
+      headers: {
+        authorization: "Bearer access-token",
+        "content-type": "application/json",
+      },
+    });
+
+    expect(response.status).toBe(201);
+    expect(sharing.createShareLink).toHaveBeenCalledWith({
+      cardId: "card-1",
+      ownerPlayerId: "player-1",
+      expiresAt: null,
+    });
+    expect(await response.json()).toMatchObject({
+      data: {
+        token: "raw-share-token",
+      },
+    });
+  });
+
+  it("lists share links for an owned card", async () => {
+    const sharing = createSharingService();
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards: createCardService(),
+      partnerships: createPartnershipService(),
+      sharing,
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/cards/card-1/share-links", {
+      headers: {
+        authorization: "Bearer access-token",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(sharing.listShareLinks).toHaveBeenCalledWith("card-1", "player-1");
   });
 });

@@ -8,7 +8,7 @@ import type { PartnershipService } from "../../../backend/src/partnerships/partn
 import type { Player } from "../../../backend/src/players/player.types.js";
 import type { SharingService } from "../../../backend/src/sharing/index.js";
 import { err, ok } from "../../../backend/src/shared/result.js";
-import type { CardTemplate, TemplateService } from "../../../backend/src/templates/index.js";
+import type { TemplateService } from "../../../backend/src/templates/index.js";
 import type { WbfVerificationService } from "../../../backend/src/wbf-verification/index.js";
 
 function buildPlayer(): Player {
@@ -30,22 +30,6 @@ function buildPlayer(): Player {
   };
 }
 
-function buildTemplate(overrides: Partial<CardTemplate> = {}): CardTemplate {
-  const now = new Date("2026-09-02T10:00:00.000Z");
-
-  return {
-    id: "template-1",
-    slug: "blank-wbf-card",
-    name: "Blank WBF Card",
-    description: "Blank template",
-    cardData: { meta: { format: "wbf" } },
-    isSystemTemplate: true,
-    createdAt: now,
-    updatedAt: now,
-    ...overrides,
-  };
-}
-
 function createAuthProvider(): AuthProvider {
   return {
     registerWithEmailPassword: vi.fn(),
@@ -55,11 +39,11 @@ function createAuthProvider(): AuthProvider {
   };
 }
 
-function createAuthService(): AuthService {
+function createAuthService(player = buildPlayer()): AuthService {
   return {
     registerPlayerAccount: vi.fn(),
     loginWithWbfNumber: vi.fn(),
-    getCurrentPlayer: vi.fn(async () => ok(buildPlayer())),
+    getCurrentPlayer: vi.fn(async () => ok(player)),
   };
 }
 
@@ -85,12 +69,10 @@ function createPartnershipService(): PartnershipService {
   };
 }
 
-function createSharingService(): SharingService {
+function createTemplateService(): TemplateService {
   return {
-    createShareLink: vi.fn(),
-    listShareLinks: vi.fn(async () => ok([])),
-    revokeShareLink: vi.fn(),
-    getPublicSharedCard: vi.fn(),
+    listTemplates: vi.fn(async () => ok([])),
+    getTemplate: vi.fn(),
   };
 }
 
@@ -105,71 +87,108 @@ function createWbfVerificationService(): WbfVerificationService {
   };
 }
 
-function createTemplateService(template = buildTemplate()): TemplateService {
+function createSharingService(): SharingService {
   return {
-    listTemplates: vi.fn(async () => ok([template])),
-    getTemplate: vi.fn(async (slug: string) => (slug === template.slug ? ok(template) : err("TEMPLATE_NOT_FOUND"))),
+    createShareLink: vi.fn(),
+    listShareLinks: vi.fn(async () => ok([])),
+    revokeShareLink: vi.fn(async () =>
+      ok({
+        id: "share-link-1",
+        cardId: "card-1",
+        expiresAt: null,
+        revokedAt: new Date("2026-09-02T12:00:00.000Z"),
+        createdAt: new Date("2026-09-02T10:00:00.000Z"),
+      }),
+    ),
+    getPublicSharedCard: vi.fn(async () =>
+      ok({
+        card: {
+          id: "card-1",
+          title: "Shared card",
+          status: "active" as const,
+          cardData: { openings: { oneClub: "2+" } },
+          updatedAt: new Date("2026-09-02T10:00:00.000Z"),
+        },
+        players: {
+          owner: {
+            displayName: "Owner",
+            wbfNumber: "123456",
+          },
+          partner: null,
+        },
+        shareLink: {
+          id: "share-link-1",
+          expiresAt: null,
+          createdAt: new Date("2026-09-02T10:00:00.000Z"),
+        },
+      }),
+    ),
   };
 }
 
-describe("template routes", () => {
-  it("lists templates", async () => {
-    const templates = createTemplateService();
+describe("sharing routes", () => {
+  it("revokes an owned share link", async () => {
+    const sharing = createSharingService();
     const app = createApp({
       auth: createAuthService(),
       authProvider: createAuthProvider(),
       cards: createCardService(),
       partnerships: createPartnershipService(),
-      sharing: createSharingService(),
-      templates,
-      wbfVerification: createWbfVerificationService(),
-    });
-
-    const response = await app.request("/templates");
-
-    expect(response.status).toBe(200);
-    expect(templates.listTemplates).toHaveBeenCalled();
-    expect(await response.json()).toMatchObject({
-      data: {
-        templates: [
-          {
-            slug: "blank-wbf-card",
-          },
-        ],
-      },
-    });
-  });
-
-  it("loads a template by slug", async () => {
-    const templates = createTemplateService();
-    const app = createApp({
-      auth: createAuthService(),
-      authProvider: createAuthProvider(),
-      cards: createCardService(),
-      partnerships: createPartnershipService(),
-      sharing: createSharingService(),
-      templates,
-      wbfVerification: createWbfVerificationService(),
-    });
-
-    const response = await app.request("/templates/blank-wbf-card");
-
-    expect(response.status).toBe(200);
-    expect(templates.getTemplate).toHaveBeenCalledWith("blank-wbf-card");
-  });
-
-  it("returns not found for an unknown template", async () => {
-    const app = createApp({
-      auth: createAuthService(),
-      authProvider: createAuthProvider(),
-      cards: createCardService(),
-      partnerships: createPartnershipService(),
-      sharing: createSharingService(),
+      sharing,
       templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
 
-    const response = await app.request("/templates/unknown-template");
+    const response = await app.request("/share-links/share-link-1/revoke", {
+      method: "POST",
+      headers: {
+        authorization: "Bearer access-token",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(sharing.revokeShareLink).toHaveBeenCalledWith("share-link-1", "player-1");
+  });
+
+  it("loads a shared card publicly by token", async () => {
+    const sharing = createSharingService();
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards: createCardService(),
+      partnerships: createPartnershipService(),
+      sharing,
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/shared/cards/raw-token");
+
+    expect(response.status).toBe(200);
+    expect(sharing.getPublicSharedCard).toHaveBeenCalledWith("raw-token");
+    expect(await response.json()).toMatchObject({
+      data: {
+        card: {
+          title: "Shared card",
+        },
+      },
+    });
+  });
+
+  it("returns not found for invalid public tokens", async () => {
+    const sharing = createSharingService();
+    vi.mocked(sharing.getPublicSharedCard).mockResolvedValueOnce(err("SHARE_LINK_NOT_FOUND"));
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards: createCardService(),
+      partnerships: createPartnershipService(),
+      sharing,
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/shared/cards/bad-token");
 
     expect(response.status).toBe(404);
   });

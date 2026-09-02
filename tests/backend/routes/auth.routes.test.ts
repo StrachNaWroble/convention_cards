@@ -6,6 +6,7 @@ import type { AuthProvider } from "../../../backend/src/auth/auth.types.js";
 import type { CardService } from "../../../backend/src/cards/card.service.js";
 import type { PartnershipService } from "../../../backend/src/partnerships/partnership.service.js";
 import type { Player } from "../../../backend/src/players/player.types.js";
+import type { SharingService } from "../../../backend/src/sharing/index.js";
 import { err, ok } from "../../../backend/src/shared/result.js";
 import type { TemplateService } from "../../../backend/src/templates/index.js";
 import type { WbfVerificationService } from "../../../backend/src/wbf-verification/index.js";
@@ -93,6 +94,15 @@ function createTemplateService(): TemplateService {
   };
 }
 
+function createSharingService(): SharingService {
+  return {
+    createShareLink: vi.fn(),
+    listShareLinks: vi.fn(async () => ok([])),
+    revokeShareLink: vi.fn(),
+    getPublicSharedCard: vi.fn(),
+  };
+}
+
 function createWbfVerificationService(): WbfVerificationService {
   return {
     verifyWbfNumber: vi.fn(async (wbfNumber: string) => ({
@@ -112,6 +122,7 @@ describe("auth routes", () => {
       authProvider: createAuthProvider(),
       cards: createCardService(),
       partnerships: createPartnershipService(),
+      sharing: createSharingService(),
       templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
@@ -144,6 +155,7 @@ describe("auth routes", () => {
       authProvider: createAuthProvider(),
       cards: createCardService(),
       partnerships: createPartnershipService(),
+      sharing: createSharingService(),
       templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
@@ -176,6 +188,7 @@ describe("auth routes", () => {
       authProvider: createAuthProvider(),
       cards: createCardService(),
       partnerships: createPartnershipService(),
+      sharing: createSharingService(),
       templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
@@ -213,6 +226,7 @@ describe("auth routes", () => {
       authProvider,
       cards: createCardService(),
       partnerships: createPartnershipService(),
+      sharing: createSharingService(),
       templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });

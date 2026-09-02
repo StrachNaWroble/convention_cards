@@ -5,6 +5,7 @@ import type { ApiBindings, ApiServices } from "./api.types.js";
 import { createAuthMiddleware } from "./auth.middleware.js";
 import { parseJsonBody } from "./requestValidation.js";
 import { jsonError, jsonOk } from "./responses.js";
+import { createShareLinkRoutes } from "./sharing.routes.js";
 
 const cardDataSchema = z.record(z.string(), z.unknown());
 
@@ -44,6 +45,8 @@ function cardErrorResponse(context: Parameters<typeof jsonError>[0], error: stri
 export function createCardRoutes(services: ApiServices): Hono<ApiBindings> {
   const routes = new Hono<ApiBindings>();
   const requireAuth = createAuthMiddleware(services);
+
+  routes.route("/", createShareLinkRoutes(services));
 
   routes.use("*", requireAuth);
 
