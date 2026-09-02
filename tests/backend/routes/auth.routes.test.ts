@@ -4,6 +4,7 @@ import { createApp } from "../../../backend/src/app.js";
 import type { AuthService } from "../../../backend/src/auth/auth.service.js";
 import type { AuthProvider } from "../../../backend/src/auth/auth.types.js";
 import type { CardService } from "../../../backend/src/cards/card.service.js";
+import type { PartnershipService } from "../../../backend/src/partnerships/partnership.service.js";
 import type { Player } from "../../../backend/src/players/player.types.js";
 import { err, ok } from "../../../backend/src/shared/result.js";
 
@@ -68,7 +69,18 @@ function createCardService(): CardService {
     getMyCard: vi.fn(),
     autosaveDraft: vi.fn(),
     submitForPartnerApproval: vi.fn(),
+    activateCard: vi.fn(),
     archiveCard: vi.fn(),
+  };
+}
+
+function createPartnershipService(): PartnershipService {
+  return {
+    createPartnership: vi.fn(),
+    listMyPartnerships: vi.fn(async () => ok([])),
+    approvePartnership: vi.fn(),
+    declinePartnership: vi.fn(),
+    archivePartnership: vi.fn(),
   };
 }
 
@@ -79,6 +91,7 @@ describe("auth routes", () => {
       auth,
       authProvider: createAuthProvider(),
       cards: createCardService(),
+      partnerships: createPartnershipService(),
     });
 
     const response = await app.request("/auth/register", {
@@ -108,6 +121,7 @@ describe("auth routes", () => {
       auth,
       authProvider: createAuthProvider(),
       cards: createCardService(),
+      partnerships: createPartnershipService(),
     });
 
     const response = await app.request("/auth/register", {
@@ -137,6 +151,7 @@ describe("auth routes", () => {
       auth,
       authProvider: createAuthProvider(),
       cards: createCardService(),
+      partnerships: createPartnershipService(),
     });
 
     const response = await app.request("/auth/login", {
@@ -171,6 +186,7 @@ describe("auth routes", () => {
       auth,
       authProvider,
       cards: createCardService(),
+      partnerships: createPartnershipService(),
     });
 
     const response = await app.request("/auth/me", {

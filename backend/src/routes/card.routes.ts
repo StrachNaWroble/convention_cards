@@ -28,6 +28,10 @@ function cardErrorResponse(context: Parameters<typeof jsonError>[0], error: stri
     return jsonError(context, 409, error, "This card cannot be edited in its current status.");
   }
 
+  if (error === "CARD_NOT_READY_FOR_ACTIVATION" || error === "PARTNERSHIP_NOT_APPROVED") {
+    return jsonError(context, 409, error, message ?? "This card is not ready for activation.");
+  }
+
   return jsonError(context, 400, error, message ?? "Could not process card request.");
 }
 
@@ -102,6 +106,16 @@ export function createCardRoutes(services: ApiServices): Hono<ApiBindings> {
 
   routes.post("/:cardId/submit-for-approval", async (context) => {
     const result = await services.cards.submitForPartnerApproval(context.req.param("cardId"), context.get("player").id);
+
+    if (!result.ok) {
+      return cardErrorResponse(context, result.error, result.message);
+    }
+
+    return jsonOk(context, result.data);
+  });
+
+  routes.post("/:cardId/activate", async (context) => {
+    const result = await services.cards.activateCard(context.req.param("cardId"), context.get("player").id);
 
     if (!result.ok) {
       return cardErrorResponse(context, result.error, result.message);

@@ -5,6 +5,7 @@ import type { AuthService } from "../../../backend/src/auth/auth.service.js";
 import type { AuthProvider } from "../../../backend/src/auth/auth.types.js";
 import type { CardService } from "../../../backend/src/cards/card.service.js";
 import type { ConventionCard } from "../../../backend/src/cards/card.types.js";
+import type { PartnershipService } from "../../../backend/src/partnerships/partnership.service.js";
 import type { Player } from "../../../backend/src/players/player.types.js";
 import { err, ok } from "../../../backend/src/shared/result.js";
 
@@ -70,7 +71,18 @@ function createCardService(card = buildCard()): CardService {
     getMyCard: vi.fn(async () => ok(card)),
     autosaveDraft: vi.fn(async () => ok(card)),
     submitForPartnerApproval: vi.fn(async () => ok(buildCard({ ...card, status: "pending_partner_approval" }))),
+    activateCard: vi.fn(async () => ok(buildCard({ ...card, status: "active" }))),
     archiveCard: vi.fn(async () => ok(buildCard({ ...card, status: "archived" }))),
+  };
+}
+
+function createPartnershipService(): PartnershipService {
+  return {
+    createPartnership: vi.fn(),
+    listMyPartnerships: vi.fn(async () => ok([])),
+    approvePartnership: vi.fn(),
+    declinePartnership: vi.fn(),
+    archivePartnership: vi.fn(),
   };
 }
 
@@ -80,6 +92,7 @@ describe("card routes", () => {
       auth: createAuthService(),
       authProvider: createAuthProvider(),
       cards: createCardService(),
+      partnerships: createPartnershipService(),
     });
 
     const response = await app.request("/cards");
@@ -93,6 +106,7 @@ describe("card routes", () => {
       auth: createAuthService(),
       authProvider: createAuthProvider(),
       cards,
+      partnerships: createPartnershipService(),
     });
 
     const response = await app.request("/cards", {
@@ -111,6 +125,7 @@ describe("card routes", () => {
       auth: createAuthService(),
       authProvider: createAuthProvider(),
       cards,
+      partnerships: createPartnershipService(),
     });
 
     const response = await app.request("/cards", {
@@ -149,6 +164,7 @@ describe("card routes", () => {
       auth: createAuthService(),
       authProvider: createAuthProvider(),
       cards,
+      partnerships: createPartnershipService(),
     });
 
     const response = await app.request("/cards/card-1", {
@@ -169,5 +185,25 @@ describe("card routes", () => {
         message: "This card cannot be edited in its current status.",
       },
     });
+  });
+
+  it("activates a submitted and approved card", async () => {
+    const cards = createCardService();
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards,
+      partnerships: createPartnershipService(),
+    });
+
+    const response = await app.request("/cards/card-1/activate", {
+      method: "POST",
+      headers: {
+        authorization: "Bearer access-token",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(cards.activateCard).toHaveBeenCalledWith("card-1", "player-1");
   });
 });

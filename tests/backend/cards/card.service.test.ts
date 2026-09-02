@@ -3,6 +3,9 @@ import { describe, expect, it } from "vitest";
 import { createCardService } from "../../../backend/src/cards/card.service.js";
 import type { CardRepository } from "../../../backend/src/cards/card.repository.js";
 import type { CardStatus, ConventionCard } from "../../../backend/src/cards/card.types.js";
+import type { PartnershipRepository } from "../../../backend/src/partnerships/partnership.repository.js";
+import type { Partnership } from "../../../backend/src/partnerships/partnership.types.js";
+import type { CardValidationService } from "../../../backend/src/validation/index.js";
 
 function buildCard(overrides: Partial<ConventionCard> = {}): ConventionCard {
   const now = new Date("2026-09-02T10:00:00.000Z");
@@ -17,6 +20,22 @@ function buildCard(overrides: Partial<ConventionCard> = {}): ConventionCard {
     submittedAt: null,
     activatedAt: null,
     archivedAt: null,
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  };
+}
+
+function buildPartnership(overrides: Partial<Partnership> = {}): Partnership {
+  const now = new Date("2026-09-02T10:00:00.000Z");
+
+  return {
+    id: "partnership-1",
+    ownerPlayerId: "player-1",
+    partnerPlayerId: "player-2",
+    partnerWbfNumber: "654321",
+    status: "approved",
+    approvedAt: now,
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -88,7 +107,38 @@ function createCardRepository(seed: ConventionCard[] = []): CardRepository {
         card.archivedAt = updatedAt;
       }
 
+      if (status === "active") {
+        card.activatedAt = updatedAt;
+      }
+
       return card;
+    },
+  };
+}
+
+function createPartnershipRepository(seed: Partnership[] = []): Pick<PartnershipRepository, "findById"> {
+  return {
+    async findById(partnershipId) {
+      return seed.find((partnership) => partnership.id === partnershipId) ?? null;
+    },
+  };
+}
+
+function createValidationService(valid = true): CardValidationService {
+  return {
+    validateForActivation() {
+      return {
+        valid,
+        issues: valid
+          ? []
+          : [
+              {
+                code: "CARD_DATA_REQUIRED",
+                path: "cardData",
+                message: "Card data is required before activation.",
+              },
+            ],
+      };
     },
   };
 }
@@ -169,5 +219,71 @@ describe("card service", () => {
 
     expect(result.data.status).toBe("pending_partner_approval");
     expect(result.data.submittedAt).toEqual(submitTime);
+  });
+
+  it("activates a submitted card when its partnership is approved", async () => {
+    const activateTime = new Date("2026-09-02T14:00:00.000Z");
+    const repository = createCardRepository([
+      buildCard({
+        status: "pending_partner_approval",
+        partnershipId: "partnership-1",
+        cardData: { openings: { oneClub: "2+" } },
+      }),
+    ]);
+    const service = createCardService({
+      cards: repository,
+      partnerships: createPartnershipRepository([buildPartnership()]),
+      validation: createValidationService(),
+      now: () => activateTime,
+    });
+
+    const result = await service.activateCard("card-1", "player-1");
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.data.status).toBe("active");
+    expect(result.data.activatedAt).toEqual(activateTime);
+  });
+
+  it("blocks activation before partner approval", async () => {
+    const repository = createCardRepository([
+      buildCard({
+        status: "pending_partner_approval",
+        partnershipId: "partnership-1",
+        cardData: { openings: { oneClub: "2+" } },
+      }),
+    ]);
+    const service = createCardService({
+      cards: repository,
+      partnerships: createPartnershipRepository([buildPartnership({ status: "pending", approvedAt: null })]),
+      validation: createValidationService(),
+    });
+
+    const result = await service.activateCard("card-1", "player-1");
+
+    expect(result).toEqual({ ok: false, error: "PARTNERSHIP_NOT_APPROVED" });
+  });
+
+  it("blocks activation when validation fails", async () => {
+    const repository = createCardRepository([
+      buildCard({
+        status: "pending_partner_approval",
+        partnershipId: "partnership-1",
+      }),
+    ]);
+    const service = createCardService({
+      cards: repository,
+      partnerships: createPartnershipRepository([buildPartnership()]),
+      validation: createValidationService(false),
+    });
+
+    const result = await service.activateCard("card-1", "player-1");
+
+    expect(result).toEqual({
+      ok: false,
+      error: "CARD_NOT_READY_FOR_ACTIVATION",
+      message: "Card data is required before activation.",
+    });
   });
 });
