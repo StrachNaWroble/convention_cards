@@ -5,7 +5,6 @@ import type { AuthService } from "../../../backend/src/auth/auth.service.js";
 import type { AuthProvider } from "../../../backend/src/auth/auth.types.js";
 import type { CardService } from "../../../backend/src/cards/card.service.js";
 import type { PartnershipService } from "../../../backend/src/partnerships/partnership.service.js";
-import type { Partnership } from "../../../backend/src/partnerships/partnership.types.js";
 import type { PlayerProfileService } from "../../../backend/src/players/playerProfile.service.js";
 import type { Player } from "../../../backend/src/players/player.types.js";
 import type { SharingService } from "../../../backend/src/sharing/index.js";
@@ -13,7 +12,7 @@ import { err, ok } from "../../../backend/src/shared/result.js";
 import type { TemplateService } from "../../../backend/src/templates/index.js";
 import type { WbfVerificationService } from "../../../backend/src/wbf-verification/index.js";
 
-function buildPlayer(): Player {
+function buildPlayer(overrides: Partial<Player> = {}): Player {
   const now = new Date("2026-09-02T10:00:00.000Z");
 
   return {
@@ -27,21 +26,6 @@ function buildPlayer(): Player {
     verificationSource: null,
     verificationCheckedAt: null,
     lastLoginAt: null,
-    createdAt: now,
-    updatedAt: now,
-  };
-}
-
-function buildPartnership(overrides: Partial<Partnership> = {}): Partnership {
-  const now = new Date("2026-09-02T10:00:00.000Z");
-
-  return {
-    id: "partnership-1",
-    ownerPlayerId: "player-1",
-    partnerPlayerId: null,
-    partnerWbfNumber: "654321",
-    status: "pending",
-    approvedAt: null,
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -81,27 +65,20 @@ function createCardService(): CardService {
   };
 }
 
-function createPartnershipService(partnership = buildPartnership()): PartnershipService {
+function createPartnershipService(): PartnershipService {
   return {
-    createPartnership: vi.fn(async () => ok(partnership)),
-    listMyPartnerships: vi.fn(async () => ok([partnership])),
-    approvePartnership: vi.fn(async () => ok(buildPartnership({ ...partnership, status: "approved" }))),
-    declinePartnership: vi.fn(async () => ok(buildPartnership({ ...partnership, status: "declined" }))),
-    archivePartnership: vi.fn(async () => ok(buildPartnership({ ...partnership, status: "archived" }))),
+    createPartnership: vi.fn(),
+    listMyPartnerships: vi.fn(async () => ok([])),
+    approvePartnership: vi.fn(),
+    declinePartnership: vi.fn(),
+    archivePartnership: vi.fn(),
   };
 }
 
-function createPlayerProfileService(): PlayerProfileService {
+function createPlayerProfileService(player = buildPlayer()): PlayerProfileService {
   return {
-    getMyProfile: vi.fn(async (player: Player) => ok(player)),
-    updateMyProfile: vi.fn(),
-  };
-}
-
-function createTemplateService(): TemplateService {
-  return {
-    listTemplates: vi.fn(async () => ok([])),
-    getTemplate: vi.fn(),
+    getMyProfile: vi.fn(async () => ok(player)),
+    updateMyProfile: vi.fn(async () => ok(player)),
   };
 }
 
@@ -111,6 +88,13 @@ function createSharingService(): SharingService {
     listShareLinks: vi.fn(async () => ok([])),
     revokeShareLink: vi.fn(),
     getPublicSharedCard: vi.fn(),
+  };
+}
+
+function createTemplateService(): TemplateService {
+  return {
+    listTemplates: vi.fn(async () => ok([])),
+    getTemplate: vi.fn(),
   };
 }
 
@@ -125,7 +109,7 @@ function createWbfVerificationService(): WbfVerificationService {
   };
 }
 
-describe("partnership routes", () => {
+describe("player routes", () => {
   it("requires authentication", async () => {
     const app = createApp({
       auth: createAuthService(),
@@ -138,119 +122,109 @@ describe("partnership routes", () => {
       wbfVerification: createWbfVerificationService(),
     });
 
-    const response = await app.request("/partnerships");
+    const response = await app.request("/players/me");
 
     expect(response.status).toBe(401);
   });
 
-  it("creates a partnership for the signed-in player", async () => {
-    const partnerships = createPartnershipService();
+  it("loads the signed-in player profile", async () => {
+    const playerProfiles = createPlayerProfileService();
     const app = createApp({
       auth: createAuthService(),
       authProvider: createAuthProvider(),
       cards: createCardService(),
-      partnerships,
-      playerProfiles: createPlayerProfileService(),
+      partnerships: createPartnershipService(),
+      playerProfiles,
       sharing: createSharingService(),
       templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
 
-    const response = await app.request("/partnerships", {
-      method: "POST",
-      body: JSON.stringify({ partnerWbfNumber: "654321" }),
-      headers: {
-        authorization: "Bearer access-token",
-        "content-type": "application/json",
-      },
-    });
-
-    expect(response.status).toBe(201);
-    expect(partnerships.createPartnership).toHaveBeenCalledWith({
-      ownerPlayerId: "player-1",
-      ownerWbfNumber: "123456",
-      partnerWbfNumber: "654321",
-    });
-  });
-
-  it("lists partnerships for the signed-in player", async () => {
-    const partnerships = createPartnershipService();
-    const player = buildPlayer();
-    const app = createApp({
-      auth: createAuthService(player),
-      authProvider: createAuthProvider(),
-      cards: createCardService(),
-      partnerships,
-      playerProfiles: createPlayerProfileService(),
-      sharing: createSharingService(),
-      templates: createTemplateService(),
-      wbfVerification: createWbfVerificationService(),
-    });
-
-    const response = await app.request("/partnerships", {
+    const response = await app.request("/players/me", {
       headers: {
         authorization: "Bearer access-token",
       },
     });
 
     expect(response.status).toBe(200);
-    expect(partnerships.listMyPartnerships).toHaveBeenCalledWith(player);
-  });
-
-  it("approves a pending partnership", async () => {
-    const partnerships = createPartnershipService();
-    const player = buildPlayer();
-    const app = createApp({
-      auth: createAuthService(player),
-      authProvider: createAuthProvider(),
-      cards: createCardService(),
-      partnerships,
-      playerProfiles: createPlayerProfileService(),
-      sharing: createSharingService(),
-      templates: createTemplateService(),
-      wbfVerification: createWbfVerificationService(),
-    });
-
-    const response = await app.request("/partnerships/partnership-1/approve", {
-      method: "POST",
-      headers: {
-        authorization: "Bearer access-token",
+    expect(playerProfiles.getMyProfile).toHaveBeenCalledWith(buildPlayer());
+    expect(await response.json()).toMatchObject({
+      data: {
+        player: {
+          id: "player-1",
+          wbfNumber: "123456",
+          email: "player@example.com",
+        },
       },
     });
-
-    expect(response.status).toBe(200);
-    expect(partnerships.approvePartnership).toHaveBeenCalledWith("partnership-1", player);
   });
 
-  it("maps self-partnership creation to a conflict", async () => {
-    const partnerships = createPartnershipService();
-    vi.mocked(partnerships.createPartnership).mockResolvedValueOnce(err("CANNOT_PARTNER_WITH_SELF"));
+  it("updates editable profile fields", async () => {
+    const updatedPlayer = buildPlayer({ displayName: "New Name", countryOrNbo: "DEN" });
+    const playerProfiles = createPlayerProfileService(updatedPlayer);
     const app = createApp({
       auth: createAuthService(),
       authProvider: createAuthProvider(),
       cards: createCardService(),
-      partnerships,
-      playerProfiles: createPlayerProfileService(),
+      partnerships: createPartnershipService(),
+      playerProfiles,
       sharing: createSharingService(),
       templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),
     });
 
-    const response = await app.request("/partnerships", {
-      method: "POST",
-      body: JSON.stringify({ partnerWbfNumber: "123456" }),
+    const response = await app.request("/players/me", {
+      method: "PATCH",
+      body: JSON.stringify({
+        displayName: "New Name",
+        countryOrNbo: "DEN",
+      }),
       headers: {
         authorization: "Bearer access-token",
         "content-type": "application/json",
       },
     });
 
-    expect(response.status).toBe(409);
-    expect(await response.json()).toEqual({
-      error: {
-        code: "CANNOT_PARTNER_WITH_SELF",
-        message: "Partnership cannot be changed this way.",
+    expect(response.status).toBe(200);
+    expect(playerProfiles.updateMyProfile).toHaveBeenCalledWith("player-1", {
+      displayName: "New Name",
+      countryOrNbo: "DEN",
+    });
+    expect(await response.json()).toMatchObject({
+      data: {
+        player: {
+          displayName: "New Name",
+          countryOrNbo: "DEN",
+        },
       },
     });
+  });
+
+  it("maps missing players to not found", async () => {
+    const playerProfiles = createPlayerProfileService();
+    vi.mocked(playerProfiles.updateMyProfile).mockResolvedValueOnce(err("PLAYER_NOT_FOUND"));
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards: createCardService(),
+      partnerships: createPartnershipService(),
+      playerProfiles,
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/players/me", {
+      method: "PATCH",
+      body: JSON.stringify({
+        displayName: "New Name",
+      }),
+      headers: {
+        authorization: "Bearer access-token",
+        "content-type": "application/json",
+      },
+    });
+
+    expect(response.status).toBe(404);
   });
 });

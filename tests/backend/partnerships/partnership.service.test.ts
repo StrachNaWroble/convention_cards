@@ -63,6 +63,14 @@ function createPlayerRepository(seed: Player[]): PlayerRepository {
       seed.push(player);
       return player;
     },
+    async updateProfile(playerId, input, updatedAt) {
+      const player = seed.find((candidate) => candidate.id === playerId);
+      if (!player) return null;
+      if (input.displayName !== undefined) player.displayName = input.displayName;
+      if (input.countryOrNbo !== undefined) player.countryOrNbo = input.countryOrNbo;
+      player.updatedAt = updatedAt;
+      return player;
+    },
     async markLogin() {
       return undefined;
     },

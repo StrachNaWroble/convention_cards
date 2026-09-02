@@ -2,13 +2,14 @@ import { eq } from "drizzle-orm";
 
 import type { Database } from "../db/client.js";
 import { players } from "../db/schema.js";
-import type { CreatePlayerInput, Player } from "./player.types.js";
+import type { CreatePlayerInput, Player, UpdatePlayerProfileInput } from "./player.types.js";
 
 export type PlayerRepository = {
   findByWbfNumber(wbfNumber: string): Promise<Player | null>;
   findByEmail(email: string): Promise<Player | null>;
   findByAuthUserId(authUserId: string): Promise<Player | null>;
   create(input: CreatePlayerInput): Promise<Player>;
+  updateProfile(playerId: string, input: UpdatePlayerProfileInput, updatedAt: Date): Promise<Player | null>;
   markLogin(authUserId: string, loggedInAt: Date): Promise<void>;
 };
 
@@ -45,6 +46,19 @@ export function createDrizzlePlayerRepository(db: Database): PlayerRepository {
         .returning();
 
       return player;
+    },
+
+    async updateProfile(playerId, input, updatedAt) {
+      const [player] = await db
+        .update(players)
+        .set({
+          ...input,
+          updatedAt,
+        })
+        .where(eq(players.id, playerId))
+        .returning();
+
+      return player ?? null;
     },
 
     async markLogin(authUserId, loggedInAt) {

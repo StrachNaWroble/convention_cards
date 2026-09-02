@@ -68,6 +68,17 @@ Authorization: Bearer <access-token>
 - `POST /partnerships/:partnershipId/decline`: decline an invitation as the partner.
 - `POST /partnerships/:partnershipId/archive`: archive a partnership visible to the signed-in player.
 
+### Players
+
+All player routes require:
+
+```text
+Authorization: Bearer <access-token>
+```
+
+- `GET /players/me`: load the signed-in player's profile.
+- `PATCH /players/me`: update editable profile fields: display name and country/NBO.
+
 ### Templates
 
 - `GET /templates`: list system card templates.

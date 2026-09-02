@@ -5,6 +5,7 @@ import type { AuthService } from "../../../backend/src/auth/auth.service.js";
 import type { AuthProvider } from "../../../backend/src/auth/auth.types.js";
 import type { CardService } from "../../../backend/src/cards/card.service.js";
 import type { PartnershipService } from "../../../backend/src/partnerships/partnership.service.js";
+import type { PlayerProfileService } from "../../../backend/src/players/playerProfile.service.js";
 import type { Player } from "../../../backend/src/players/player.types.js";
 import type { SharingService } from "../../../backend/src/sharing/index.js";
 import { err, ok } from "../../../backend/src/shared/result.js";
@@ -89,6 +90,13 @@ function createPartnershipService(): PartnershipService {
   };
 }
 
+function createPlayerProfileService(): PlayerProfileService {
+  return {
+    getMyProfile: vi.fn(async (player: Player) => ok(player)),
+    updateMyProfile: vi.fn(),
+  };
+}
+
 function createSharingService(): SharingService {
   return {
     createShareLink: vi.fn(),
@@ -124,6 +132,7 @@ describe("template routes", () => {
       authProvider: createAuthProvider(),
       cards: createCardService(),
       partnerships: createPartnershipService(),
+      playerProfiles: createPlayerProfileService(),
       sharing: createSharingService(),
       templates,
       wbfVerification: createWbfVerificationService(),
@@ -151,6 +160,7 @@ describe("template routes", () => {
       authProvider: createAuthProvider(),
       cards: createCardService(),
       partnerships: createPartnershipService(),
+      playerProfiles: createPlayerProfileService(),
       sharing: createSharingService(),
       templates,
       wbfVerification: createWbfVerificationService(),
@@ -168,6 +178,7 @@ describe("template routes", () => {
       authProvider: createAuthProvider(),
       cards: createCardService(),
       partnerships: createPartnershipService(),
+      playerProfiles: createPlayerProfileService(),
       sharing: createSharingService(),
       templates: createTemplateService(),
       wbfVerification: createWbfVerificationService(),

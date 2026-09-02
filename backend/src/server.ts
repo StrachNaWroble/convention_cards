@@ -9,6 +9,7 @@ import { createDatabaseClient } from "./db/index.js";
 import { createDrizzleCardRepository } from "./cards/card.repository.js";
 import { createApp } from "./app.js";
 import { createDrizzlePartnershipRepository, createPartnershipService } from "./partnerships/index.js";
+import { createPlayerProfileService } from "./players/playerProfile.service.js";
 import { createDrizzlePlayerRepository } from "./players/player.repository.js";
 import { createDrizzleSharingRepository, createSharingService } from "./sharing/index.js";
 import { createDrizzleTemplateRepository, createTemplateService } from "./templates/index.js";
@@ -37,6 +38,9 @@ const partnerships = createPartnershipService({
   partnerships: partnershipRepository,
   players: playerRepository,
 });
+const playerProfiles = createPlayerProfileService({
+  players: playerRepository,
+});
 const templates = createTemplateService(templateRepository);
 const sharing = createSharingService({
   cards: cardRepository,
@@ -48,6 +52,7 @@ const app = createApp({
   authProvider,
   cards,
   partnerships,
+  playerProfiles,
   sharing,
   templates,
   wbfVerification: createWbfPeopleFinderService(),
