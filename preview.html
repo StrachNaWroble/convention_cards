@@ -1,0 +1,743 @@
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bidding Table Preview</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      let activeInput = null;
+      document.addEventListener('focusin', function(e) {
+        if(e.target && e.target.tagName === 'INPUT') {
+          activeInput = e.target;
+        }
+      });
+      function insertSymbol(symbol) {
+        if (activeInput) {
+          const start = activeInput.selectionStart || 0;
+          const end = activeInput.selectionEnd || 0;
+          const text = activeInput.value;
+          activeInput.value = text.substring(0, start) + symbol + text.substring(end);
+          activeInput.focus();
+          activeInput.setSelectionRange(start + symbol.length, start + symbol.length);
+        }
+      }
+    </script>
+</head>
+<body class="p-8 bg-gray-50 flex justify-center">
+    <div class="w-full max-w-5xl flex flex-col gap-4 font-sans bg-white p-6 shadow-md border border-gray-200">
+      
+      <div class="sticky top-0 z-10 flex gap-2 p-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm w-fit items-center">
+        <span class="text-sm font-semibold text-gray-700 mr-2">Wstaw symbol:</span>
+        <button type="button" onclick="insertSymbol('♣')" class="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 rounded hover:bg-gray-100 text-gray-900 font-bold shadow-sm transition-colors">♣</button>
+        <button type="button" onclick="insertSymbol('♦')" class="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 rounded hover:bg-gray-100 text-red-600 font-bold shadow-sm transition-colors">♦</button>
+        <button type="button" onclick="insertSymbol('♥')" class="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 rounded hover:bg-gray-100 text-red-600 font-bold shadow-sm transition-colors">♥</button>
+        <button type="button" onclick="insertSymbol('♠')" class="w-8 h-8 flex items-center justify-center bg-white border border-gray-300 rounded hover:bg-gray-100 text-gray-900 font-bold shadow-sm transition-colors">♠</button>
+        <span class="text-xs text-gray-400 ml-2">(Kliknij pole tekstowe, a następnie symbol)</span>
+      </div>
+
+      <div class="w-full overflow-x-auto pb-4">
+        <table class="w-full border-collapse border-2 border-black text-xs min-w-[900px]">
+          <thead>
+            <tr>
+              <th rowspan="2" class="border border-black p-1 w-10 bg-gray-100 text-[10px] font-bold uppercase text-center [writing-mode:vertical-rl] rotate-180">Opening</th>
+              <th rowspan="2" class="border border-black p-1 w-8 bg-gray-100 text-[10px] font-bold uppercase text-center [writing-mode:vertical-rl] rotate-180">Tick if<br/>Artificial</th>
+              <th rowspan="2" class="border border-black p-1 w-8 bg-gray-100 text-[10px] font-bold uppercase text-center [writing-mode:vertical-rl] rotate-180">Min. No. of<br/>Cards</th>
+              <th rowspan="2" class="border border-black p-1 w-8 bg-gray-100 text-[10px] font-bold uppercase text-center [writing-mode:vertical-rl] rotate-180">Neg. Dbl<br/>Thru</th>
+              <th colspan="4" class="border border-black bg-gray-200 h-6"></th>
+            </tr>
+            <tr>
+              <th class="border border-black p-1 bg-gray-100 text-[10px] font-bold uppercase text-center w-[22%]">Description</th>
+              <th class="border border-black p-1 bg-gray-100 text-[10px] font-bold uppercase text-center w-[22%]">Responses</th>
+              <th class="border border-black p-1 bg-gray-100 text-[10px] font-bold uppercase text-center w-[22%]">Subsequent Action</th>
+              <th class="border border-black p-1 bg-gray-100 text-[10px] font-bold uppercase text-center w-[22%]">Competitive & Passed<br/>Hand Bidding</th>
+            </tr>
+          </thead>
+          <tbody>
+
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border border-black p-1 text-center whitespace-nowrap bg-gray-100">
+                      1<span class="text-gray-900 font-bold">♣</span>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                      <div class="h-6 invisible"></div>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                  </tr>
+    
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border border-black p-1 text-center whitespace-nowrap bg-gray-100">
+                      1<span class="text-red-600 font-bold">♦</span>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                      <div class="h-6 invisible"></div>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                  </tr>
+    
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border border-black p-1 text-center whitespace-nowrap bg-gray-100">
+                      1<span class="text-red-600 font-bold">♥</span>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                      <div class="h-6 invisible"></div>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                  </tr>
+    
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border border-black p-1 text-center whitespace-nowrap bg-gray-100">
+                      1<span class="text-gray-900 font-bold">♠</span>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                      <div class="h-6 invisible"></div>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                  </tr>
+    
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border border-black p-1 text-center whitespace-nowrap bg-gray-100">
+                      1<span class="font-bold">NT</span>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                      <div class="h-6 invisible"></div>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                  </tr>
+    
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border border-black p-1 text-center whitespace-nowrap bg-gray-100">
+                      2<span class="text-gray-900 font-bold">♣</span>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                      <div class="h-6 invisible"></div>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                  </tr>
+    
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border border-black p-1 text-center whitespace-nowrap bg-gray-100">
+                      2<span class="text-red-600 font-bold">♦</span>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                      <div class="h-6 invisible"></div>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                  </tr>
+    
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border border-black p-1 text-center whitespace-nowrap bg-gray-100">
+                      2<span class="text-red-600 font-bold">♥</span>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                      <div class="h-6 invisible"></div>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                  </tr>
+    
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border border-black p-1 text-center whitespace-nowrap bg-gray-100">
+                      2<span class="text-gray-900 font-bold">♠</span>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                      <div class="h-6 invisible"></div>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                  </tr>
+    
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border border-black p-1 text-center whitespace-nowrap bg-gray-100">
+                      2<span class="font-bold">NT</span>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                      <div class="h-6 invisible"></div>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                  </tr>
+    
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border border-black p-1 text-center whitespace-nowrap bg-gray-100">
+                      3<span class="text-gray-900 font-bold">♣</span>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                      <div class="h-6 invisible"></div>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                  </tr>
+    
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border border-black p-1 text-center whitespace-nowrap bg-gray-100">
+                      3<span class="text-red-600 font-bold">♦</span>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                      <div class="h-6 invisible"></div>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                  </tr>
+    
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border border-black p-1 text-center whitespace-nowrap bg-gray-100">
+                      3<span class="text-red-600 font-bold">♥</span>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                      <div class="h-6 invisible"></div>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                  </tr>
+    
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border border-black p-1 text-center whitespace-nowrap bg-gray-100">
+                      3<span class="text-gray-900 font-bold">♠</span>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                      <div class="h-6 invisible"></div>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                  </tr>
+    
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border border-black p-1 text-center whitespace-nowrap bg-gray-100">
+                      3<span class="font-bold">NT</span>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                      <div class="h-6 invisible"></div>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                  </tr>
+    
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border border-black p-1 text-center whitespace-nowrap bg-gray-100">
+                      4<span class="text-gray-900 font-bold">♣</span>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                      <div class="h-6 invisible"></div>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                  </tr>
+    
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border border-black p-1 text-center whitespace-nowrap bg-gray-100">
+                      4<span class="text-red-600 font-bold">♦</span>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                      <div class="h-6 invisible"></div>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                  </tr>
+    
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border border-black p-1 text-center whitespace-nowrap bg-gray-100">
+                      4<span class="text-red-600 font-bold">♥</span>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                      <div class="h-6 invisible"></div>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                  </tr>
+    
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border border-black p-1 text-center whitespace-nowrap bg-gray-100">
+                      4<span class="text-gray-900 font-bold">♠</span>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                      <div class="h-6 invisible"></div>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                  </tr>
+    
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border border-black p-1 text-center whitespace-nowrap bg-gray-100">
+                      4<span class="font-bold">NT</span>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                      <div class="h-6 invisible"></div>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                  </tr>
+    
+                  <tr class="bg-gray-200">
+                    <td colspan="4" class="border border-black"></td>
+                    <td colspan="4" class="border border-black p-1 text-[10px] font-bold uppercase text-center">
+                      High Level Bidding
+                    </td>
+                  </tr>
+        
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border border-black p-1 text-center whitespace-nowrap bg-gray-100">
+                      5<span class="text-gray-900 font-bold">♣</span>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                      <div class="h-6 invisible"></div>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                  </tr>
+    
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border border-black p-1 text-center whitespace-nowrap bg-gray-100">
+                      5<span class="text-red-600 font-bold">♦</span>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                      <div class="h-6 invisible"></div>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                  </tr>
+    
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border border-black p-1 text-center whitespace-nowrap bg-gray-100">
+                      5<span class="text-red-600 font-bold">♥</span>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                      <div class="h-6 invisible"></div>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                  </tr>
+    
+                  <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="border border-black p-1 text-center whitespace-nowrap bg-gray-100">
+                      5<span class="text-gray-900 font-bold">♠</span>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                      <div class="h-6 invisible"></div>
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-1 text-center border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                    <td class="border border-black p-0 relative">
+                      <input type="text" class="absolute inset-0 bg-transparent w-full h-full px-2 border-none outline-none focus:bg-blue-100 transition-colors duration-150" />
+                    </td>
+                  </tr>
+    
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>
