@@ -4,7 +4,12 @@ import { RegisterFormData } from '../schemas/auth';
 import { authApi } from '../features/auth/services/auth.api';
 import { ApiError } from '../services/api';
 
-export const RegisterView: React.FC = () => {
+interface RegisterViewProps {
+  onNavigateToLogin?: () => void;
+  onRegisterSuccess?: () => void;
+}
+
+export const RegisterView: React.FC<RegisterViewProps> = ({ onNavigateToLogin, onRegisterSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
 
@@ -14,8 +19,9 @@ export const RegisterView: React.FC = () => {
     
     try {
       const result = await authApi.register(data);
-      alert('Account created successfully! Welcome ' + (result.player.displayName || result.player.wbfNumber));
-      // Tutaj w przyszłości można przekierować do dashboardu, np. używając react-router'a: navigate('/dashboard')
+      if (onRegisterSuccess) {
+        onRegisterSuccess();
+      }
     } catch (error) {
       if (error instanceof ApiError) {
         setGlobalError(error.message);
@@ -53,7 +59,7 @@ export const RegisterView: React.FC = () => {
             <p className="text-sm font-semibold">{globalError}</p>
           </div>
         )}
-        <RegisterForm onSubmit={handleRegisterSubmit} isLoading={isLoading} />
+        <RegisterForm onSubmit={handleRegisterSubmit} isLoading={isLoading} onNavigateToLogin={onNavigateToLogin} />
       </div>
       
       {/* Footer */}

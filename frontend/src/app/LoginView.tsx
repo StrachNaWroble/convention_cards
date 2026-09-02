@@ -4,7 +4,12 @@ import { LoginFormData } from '../schemas/auth';
 import { authApi } from '../features/auth/services/auth.api';
 import { ApiError } from '../services/api';
 
-export const LoginView: React.FC = () => {
+interface LoginViewProps {
+  onNavigateToRegister?: () => void;
+  onLoginSuccess?: () => void;
+}
+
+export const LoginView: React.FC<LoginViewProps> = ({ onNavigateToRegister, onLoginSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
 
@@ -14,9 +19,9 @@ export const LoginView: React.FC = () => {
     
     try {
       const result = await authApi.login(data);
-      alert('Logged in successfully! Welcome ' + (result.player.displayName || result.player.wbfNumber));
-      // Możesz tutaj ustawić token i przekierować użytkownika (np. do Dashboardu)
-      // localStorage.setItem('token', result.session.access_token);
+      if (onLoginSuccess) {
+        onLoginSuccess();
+      }
     } catch (error) {
       if (error instanceof ApiError) {
         setGlobalError(error.message);
@@ -57,7 +62,7 @@ export const LoginView: React.FC = () => {
             <p className="text-sm font-semibold">{globalError}</p>
           </div>
         )}
-        <LoginForm onSubmit={handleLoginSubmit} isLoading={isLoading} />
+        <LoginForm onSubmit={handleLoginSubmit} isLoading={isLoading} onNavigateToRegister={onNavigateToRegister} />
       </div>
       
       {/* Footer */}
