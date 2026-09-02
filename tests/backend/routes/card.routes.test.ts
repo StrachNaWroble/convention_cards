@@ -8,6 +8,7 @@ import type { ConventionCard } from "../../../backend/src/cards/card.types.js";
 import type { PartnershipService } from "../../../backend/src/partnerships/partnership.service.js";
 import type { Player } from "../../../backend/src/players/player.types.js";
 import { err, ok } from "../../../backend/src/shared/result.js";
+import type { WbfVerificationService } from "../../../backend/src/wbf-verification/index.js";
 
 function buildPlayer(): Player {
   const now = new Date("2026-09-02T10:00:00.000Z");
@@ -86,6 +87,17 @@ function createPartnershipService(): PartnershipService {
   };
 }
 
+function createWbfVerificationService(): WbfVerificationService {
+  return {
+    verifyWbfNumber: vi.fn(async (wbfNumber: string) => ({
+      status: "unavailable" as const,
+      wbfNumber,
+      checkedAt: new Date("2026-09-02T10:00:00.000Z"),
+      confidence: "low" as const,
+    })),
+  };
+}
+
 describe("card routes", () => {
   it("requires authentication", async () => {
     const app = createApp({
@@ -93,6 +105,7 @@ describe("card routes", () => {
       authProvider: createAuthProvider(),
       cards: createCardService(),
       partnerships: createPartnershipService(),
+      wbfVerification: createWbfVerificationService(),
     });
 
     const response = await app.request("/cards");
@@ -107,6 +120,7 @@ describe("card routes", () => {
       authProvider: createAuthProvider(),
       cards,
       partnerships: createPartnershipService(),
+      wbfVerification: createWbfVerificationService(),
     });
 
     const response = await app.request("/cards", {
@@ -126,6 +140,7 @@ describe("card routes", () => {
       authProvider: createAuthProvider(),
       cards,
       partnerships: createPartnershipService(),
+      wbfVerification: createWbfVerificationService(),
     });
 
     const response = await app.request("/cards", {
@@ -165,6 +180,7 @@ describe("card routes", () => {
       authProvider: createAuthProvider(),
       cards,
       partnerships: createPartnershipService(),
+      wbfVerification: createWbfVerificationService(),
     });
 
     const response = await app.request("/cards/card-1", {
@@ -194,6 +210,7 @@ describe("card routes", () => {
       authProvider: createAuthProvider(),
       cards,
       partnerships: createPartnershipService(),
+      wbfVerification: createWbfVerificationService(),
     });
 
     const response = await app.request("/cards/card-1/activate", {

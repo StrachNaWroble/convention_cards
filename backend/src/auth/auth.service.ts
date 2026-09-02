@@ -1,6 +1,7 @@
 import type { PlayerRepository } from "../players/player.repository.js";
 import { normalizeEmail, normalizeWbfNumber } from "../players/player.types.js";
 import { err, ok, type Result } from "../shared/result.js";
+import type { WbfVerificationService } from "../wbf-verification/index.js";
 import type {
   AuthProvider,
   LoginWithWbfNumberInput,
@@ -14,6 +15,7 @@ export type AuthServiceError =
   | "EMAIL_ALREADY_REGISTERED"
   | "INVALID_CREDENTIALS"
   | "AUTH_PROVIDER_ERROR"
+  | "WBF_NUMBER_NOT_FOUND"
   | "PLAYER_CREATE_FAILED";
 
 export type AuthService = {
@@ -25,10 +27,16 @@ export type AuthService = {
 type AuthServiceDeps = {
   players: PlayerRepository;
   authProvider: AuthProvider;
+  wbfVerification?: WbfVerificationService;
   now?: () => Date;
 };
 
-export function createAuthService({ players, authProvider, now = () => new Date() }: AuthServiceDeps): AuthService {
+export function createAuthService({
+  players,
+  authProvider,
+  wbfVerification,
+  now = () => new Date(),
+}: AuthServiceDeps): AuthService {
   return {
     async registerPlayerAccount(input) {
       const wbfNumber = normalizeWbfNumber(input.wbfNumber);
@@ -44,6 +52,12 @@ export function createAuthService({ players, authProvider, now = () => new Date(
         return err("EMAIL_ALREADY_REGISTERED");
       }
 
+      const verification = await wbfVerification?.verifyWbfNumber(wbfNumber);
+
+      if (verification?.status === "not_found") {
+        return err("WBF_NUMBER_NOT_FOUND");
+      }
+
       const authUser = await authProvider.registerWithEmailPassword(email, input.password);
       if (!authUser.ok) {
         return err("AUTH_PROVIDER_ERROR", authUser.message);
@@ -54,9 +68,11 @@ export function createAuthService({ players, authProvider, now = () => new Date(
           authUserId: authUser.data.id,
           wbfNumber,
           email,
-          displayName: input.displayName ?? null,
-          countryOrNbo: input.countryOrNbo ?? null,
-          verificationStatus: "pending",
+          displayName: input.displayName ?? verification?.playerName ?? null,
+          countryOrNbo: input.countryOrNbo ?? verification?.countryOrNbo ?? null,
+          verificationStatus: verification?.status === "found" ? "verified" : "pending",
+          verificationSource: verification?.sourceUrl,
+          verificationCheckedAt: verification?.checkedAt,
         });
 
         return ok({ player, authUser: authUser.data });

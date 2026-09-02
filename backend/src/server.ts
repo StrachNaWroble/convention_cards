@@ -11,6 +11,7 @@ import { createApp } from "./app.js";
 import { createDrizzlePartnershipRepository, createPartnershipService } from "./partnerships/index.js";
 import { createDrizzlePlayerRepository } from "./players/player.repository.js";
 import { createCardValidationService } from "./validation/index.js";
+import { createWbfPeopleFinderService } from "./wbf-verification/index.js";
 
 const env = loadAppEnv();
 const database = createDatabaseClient(env.databaseUrl, { ssl: true });
@@ -21,6 +22,7 @@ const partnershipRepository = createDrizzlePartnershipRepository(database.db);
 const auth = createAuthService({
   players: playerRepository,
   authProvider,
+  wbfVerification: createWbfPeopleFinderService(),
 });
 const cards = createCardService({
   cards: cardRepository,
@@ -36,6 +38,7 @@ const app = createApp({
   authProvider,
   cards,
   partnerships,
+  wbfVerification: createWbfPeopleFinderService(),
 });
 const port = Number(process.env.PORT ?? "3000");
 
