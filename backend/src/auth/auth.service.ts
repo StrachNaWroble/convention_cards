@@ -1,0 +1,96 @@
+import type { PlayerRepository } from "../players/player.repository.js";
+import { normalizeEmail, normalizeWbfNumber } from "../players/player.types.js";
+import { err, ok, type Result } from "../shared/result.js";
+import type {
+  AuthProvider,
+  LoginWithWbfNumberInput,
+  LoginWithWbfNumberResult,
+  RegisterPlayerInput,
+  RegisterPlayerResult,
+} from "./auth.types.js";
+
+export type AuthServiceError =
+  | "WBF_NUMBER_ALREADY_REGISTERED"
+  | "EMAIL_ALREADY_REGISTERED"
+  | "INVALID_CREDENTIALS"
+  | "AUTH_PROVIDER_ERROR"
+  | "PLAYER_CREATE_FAILED";
+
+export type AuthService = {
+  registerPlayerAccount(input: RegisterPlayerInput): Promise<Result<RegisterPlayerResult, AuthServiceError>>;
+  loginWithWbfNumber(input: LoginWithWbfNumberInput): Promise<Result<LoginWithWbfNumberResult, AuthServiceError>>;
+  getCurrentPlayer(authUserId: string): Promise<Result<LoginWithWbfNumberResult["player"], "PLAYER_NOT_FOUND">>;
+};
+
+type AuthServiceDeps = {
+  players: PlayerRepository;
+  authProvider: AuthProvider;
+  now?: () => Date;
+};
+
+export function createAuthService({ players, authProvider, now = () => new Date() }: AuthServiceDeps): AuthService {
+  return {
+    async registerPlayerAccount(input) {
+      const wbfNumber = normalizeWbfNumber(input.wbfNumber);
+      const email = normalizeEmail(input.email);
+
+      const existingWbfNumber = await players.findByWbfNumber(wbfNumber);
+      if (existingWbfNumber) {
+        return err("WBF_NUMBER_ALREADY_REGISTERED");
+      }
+
+      const existingEmail = await players.findByEmail(email);
+      if (existingEmail) {
+        return err("EMAIL_ALREADY_REGISTERED");
+      }
+
+      const authUser = await authProvider.registerWithEmailPassword(email, input.password);
+      if (!authUser.ok) {
+        return err("AUTH_PROVIDER_ERROR", authUser.message);
+      }
+
+      try {
+        const player = await players.create({
+          authUserId: authUser.data.id,
+          wbfNumber,
+          email,
+          displayName: input.displayName ?? null,
+          countryOrNbo: input.countryOrNbo ?? null,
+          verificationStatus: "pending",
+        });
+
+        return ok({ player, authUser: authUser.data });
+      } catch (error) {
+        return err("PLAYER_CREATE_FAILED", error instanceof Error ? error.message : "Could not create player.");
+      }
+    },
+
+    async loginWithWbfNumber(input) {
+      const wbfNumber = normalizeWbfNumber(input.wbfNumber);
+      const player = await players.findByWbfNumber(wbfNumber);
+
+      if (!player) {
+        return err("INVALID_CREDENTIALS");
+      }
+
+      const session = await authProvider.signInWithEmailPassword(player.email, input.password);
+      if (!session.ok) {
+        return err("INVALID_CREDENTIALS");
+      }
+
+      await players.markLogin(player.authUserId, now());
+
+      return ok({ player, session: session.data });
+    },
+
+    async getCurrentPlayer(authUserId) {
+      const player = await players.findByAuthUserId(authUserId);
+
+      if (!player) {
+        return err("PLAYER_NOT_FOUND");
+      }
+
+      return ok(player);
+    },
+  };
+}

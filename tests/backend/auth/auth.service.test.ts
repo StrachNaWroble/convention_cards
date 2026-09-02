@@ -1,0 +1,152 @@
+import { describe, expect, it, vi } from "vitest";
+
+import { createAuthService } from "../../../backend/src/auth/auth.service.js";
+import type { AuthProvider } from "../../../backend/src/auth/auth.types.js";
+import type { PlayerRepository } from "../../../backend/src/players/player.repository.js";
+import type { CreatePlayerInput, Player } from "../../../backend/src/players/player.types.js";
+import { ok } from "../../../backend/src/shared/result.js";
+
+function buildPlayer(overrides: Partial<Player> = {}): Player {
+  const now = new Date("2026-09-02T10:00:00.000Z");
+
+  return {
+    id: "player-1",
+    authUserId: "auth-user-1",
+    wbfNumber: "123456",
+    email: "player@example.com",
+    displayName: "Test Player",
+    countryOrNbo: null,
+    verificationStatus: "pending",
+    verificationSource: null,
+    verificationCheckedAt: null,
+    lastLoginAt: null,
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  };
+}
+
+function createPlayerRepository(seed: Player[] = []): PlayerRepository {
+  const players = [...seed];
+
+  return {
+    async findByWbfNumber(wbfNumber) {
+      return players.find((player) => player.wbfNumber === wbfNumber) ?? null;
+    },
+
+    async findByEmail(email) {
+      return players.find((player) => player.email === email) ?? null;
+    },
+
+    async findByAuthUserId(authUserId) {
+      return players.find((player) => player.authUserId === authUserId) ?? null;
+    },
+
+    async create(input: CreatePlayerInput) {
+      const player = buildPlayer({
+        id: `player-${players.length + 1}`,
+        authUserId: input.authUserId,
+        wbfNumber: input.wbfNumber,
+        email: input.email,
+        displayName: input.displayName ?? null,
+        countryOrNbo: input.countryOrNbo ?? null,
+        verificationStatus: input.verificationStatus ?? "pending",
+      });
+
+      players.push(player);
+      return player;
+    },
+
+    async markLogin(authUserId, loggedInAt) {
+      const player = players.find((candidate) => candidate.authUserId === authUserId);
+      if (player) {
+        player.lastLoginAt = loggedInAt;
+      }
+    },
+  };
+}
+
+function createAuthProvider(): AuthProvider {
+  return {
+    registerWithEmailPassword: vi.fn(async (email: string) => ok({ id: "auth-user-new", email })),
+    signInWithEmailPassword: vi.fn(async () =>
+      ok({
+        accessToken: "access-token",
+        refreshToken: "refresh-token",
+        expiresAt: 1_788_345_600,
+      }),
+    ),
+    signOut: vi.fn(async () => ok(undefined)),
+  };
+}
+
+describe("auth service", () => {
+  it("registers a player with normalized WBF number and email", async () => {
+    const repository = createPlayerRepository();
+    const authProvider = createAuthProvider();
+    const service = createAuthService({ players: repository, authProvider });
+
+    const result = await service.registerPlayerAccount({
+      wbfNumber: " 123 456 ",
+      email: "PLAYER@EXAMPLE.COM ",
+      password: "safe-password",
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.data.player.wbfNumber).toBe("123456");
+    expect(result.data.player.email).toBe("player@example.com");
+    expect(authProvider.registerWithEmailPassword).toHaveBeenCalledWith("player@example.com", "safe-password");
+  });
+
+  it("rejects duplicate WBF numbers before creating an auth user", async () => {
+    const repository = createPlayerRepository([buildPlayer()]);
+    const authProvider = createAuthProvider();
+    const service = createAuthService({ players: repository, authProvider });
+
+    const result = await service.registerPlayerAccount({
+      wbfNumber: "123456",
+      email: "other@example.com",
+      password: "safe-password",
+    });
+
+    expect(result).toEqual({ ok: false, error: "WBF_NUMBER_ALREADY_REGISTERED" });
+    expect(authProvider.registerWithEmailPassword).not.toHaveBeenCalled();
+  });
+
+  it("logs in with WBF number by signing into the auth provider with the stored email", async () => {
+    const loginTime = new Date("2026-09-02T12:00:00.000Z");
+    const player = buildPlayer();
+    const repository = createPlayerRepository([player]);
+    const authProvider = createAuthProvider();
+    const service = createAuthService({
+      players: repository,
+      authProvider,
+      now: () => loginTime,
+    });
+
+    const result = await service.loginWithWbfNumber({
+      wbfNumber: " 123456 ",
+      password: "safe-password",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(authProvider.signInWithEmailPassword).toHaveBeenCalledWith("player@example.com", "safe-password");
+    expect(player.lastLoginAt).toEqual(loginTime);
+  });
+
+  it("does not reveal whether an unknown WBF number exists during login", async () => {
+    const repository = createPlayerRepository();
+    const authProvider = createAuthProvider();
+    const service = createAuthService({ players: repository, authProvider });
+
+    const result = await service.loginWithWbfNumber({
+      wbfNumber: "999999",
+      password: "wrong-password",
+    });
+
+    expect(result).toEqual({ ok: false, error: "INVALID_CREDENTIALS" });
+    expect(authProvider.signInWithEmailPassword).not.toHaveBeenCalled();
+  });
+});
