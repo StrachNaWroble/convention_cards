@@ -49,4 +49,4 @@ Mobile support is not part of the first release, but the layout and data model s
 
 ## Reference Layout
 
-The initial reference card is `/Users/Florian/Desktop/Blank_wbf_card.pdf`. It is a two-page WBF-style card used as a visual/layout reference, not as executable project instructions and not as a fillable PDF form.
+It is a two-page WBF-style card used as a visual/layout reference, not as executable project instructions and not as a fillable PDF form.
