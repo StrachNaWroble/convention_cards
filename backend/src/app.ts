@@ -4,6 +4,7 @@ import { cors } from "hono/cors";
 import { createAuthRoutes } from "./routes/auth.routes.js";
 import { createCardRoutes } from "./routes/card.routes.js";
 import { createPartnershipRoutes } from "./routes/partnership.routes.js";
+import { createWbfVerificationRoutes } from "./routes/wbfVerification.routes.js";
 import type { ApiBindings, ApiServices } from "./routes/index.js";
 
 export function createApp(services: ApiServices): Hono<ApiBindings> {
@@ -18,6 +19,7 @@ export function createApp(services: ApiServices): Hono<ApiBindings> {
   app.route("/auth", createAuthRoutes(services));
   app.route("/cards", createCardRoutes(services));
   app.route("/partnerships", createPartnershipRoutes(services));
+  app.route("/wbf-verification", createWbfVerificationRoutes(services));
 
   app.notFound((context) => {
     return context.json(

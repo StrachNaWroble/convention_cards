@@ -11,3 +11,13 @@ The service should return normalized verification results such as:
 - country or NBO when available;
 - source timestamp;
 - verification confidence/status.
+
+## Current Implementation
+
+The adapter exposes a stable `verifyWbfNumber(wbfNumber)` service. It can call the public WBF People Finder/person page and parse the returned HTML into one of three states:
+
+- `found`
+- `not_found`
+- `unavailable`
+
+The lookup URL is configurable with `WBF_PEOPLE_FINDER_URL_TEMPLATE`, using `{wbfNumber}` as the placeholder. This keeps the rest of the app isolated if the WBF page structure or endpoint changes.

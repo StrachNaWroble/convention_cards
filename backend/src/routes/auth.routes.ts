@@ -40,6 +40,10 @@ export function createAuthRoutes(services: ApiServices): Hono<ApiBindings> {
         return jsonError(context, 409, result.error, "This email is already registered.");
       }
 
+      if (result.error === "WBF_NUMBER_NOT_FOUND") {
+        return jsonError(context, 422, result.error, "This WBF number could not be found.");
+      }
+
       return jsonError(context, 400, result.error, result.message ?? "Could not register player account.");
     }
 

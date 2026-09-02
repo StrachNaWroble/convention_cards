@@ -27,6 +27,10 @@ Prefer resource-oriented endpoints over action-heavy names where it stays readab
 - `POST /auth/logout`: revoke the current bearer token.
 - `GET /auth/me`: return the current player profile for the bearer token.
 
+### WBF Verification
+
+- `POST /wbf-verification/verify`: verify a WBF number through the backend adapter.
+
 ### Cards
 
 All card routes require:

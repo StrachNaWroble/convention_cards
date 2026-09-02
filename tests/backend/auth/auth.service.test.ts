@@ -5,6 +5,7 @@ import type { AuthProvider } from "../../../backend/src/auth/auth.types.js";
 import type { PlayerRepository } from "../../../backend/src/players/player.repository.js";
 import type { CreatePlayerInput, Player } from "../../../backend/src/players/player.types.js";
 import { ok } from "../../../backend/src/shared/result.js";
+import type { WbfVerificationService } from "../../../backend/src/wbf-verification/index.js";
 
 function buildPlayer(overrides: Partial<Player> = {}): Player {
   const now = new Date("2026-09-02T10:00:00.000Z");
@@ -81,6 +82,22 @@ function createAuthProvider(): AuthProvider {
   };
 }
 
+function createWbfVerificationService(status: "found" | "not_found" | "unavailable" = "unavailable"): WbfVerificationService {
+  return {
+    async verifyWbfNumber(wbfNumber) {
+      return {
+        status,
+        wbfNumber,
+        playerName: status === "found" ? "Verified Player" : undefined,
+        countryOrNbo: status === "found" ? "POL" : undefined,
+        sourceUrl: "https://www.worldbridge.org/person/?qryid=123456",
+        checkedAt: new Date("2026-09-02T12:00:00.000Z"),
+        confidence: status === "found" ? "high" : "low",
+      };
+    },
+  };
+}
+
 describe("auth service", () => {
   it("registers a player with normalized WBF number and email", async () => {
     const repository = createPlayerRepository();
@@ -99,6 +116,48 @@ describe("auth service", () => {
     expect(result.data.player.wbfNumber).toBe("123456");
     expect(result.data.player.email).toBe("player@example.com");
     expect(authProvider.registerWithEmailPassword).toHaveBeenCalledWith("player@example.com", "safe-password");
+  });
+
+  it("stores verified WBF lookup details when registration finds a player", async () => {
+    const repository = createPlayerRepository();
+    const authProvider = createAuthProvider();
+    const service = createAuthService({
+      players: repository,
+      authProvider,
+      wbfVerification: createWbfVerificationService("found"),
+    });
+
+    const result = await service.registerPlayerAccount({
+      wbfNumber: "123456",
+      email: "player@example.com",
+      password: "safe-password",
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.data.player.displayName).toBe("Verified Player");
+    expect(result.data.player.countryOrNbo).toBe("POL");
+    expect(result.data.player.verificationStatus).toBe("verified");
+  });
+
+  it("rejects registration when WBF lookup confirms the number does not exist", async () => {
+    const repository = createPlayerRepository();
+    const authProvider = createAuthProvider();
+    const service = createAuthService({
+      players: repository,
+      authProvider,
+      wbfVerification: createWbfVerificationService("not_found"),
+    });
+
+    const result = await service.registerPlayerAccount({
+      wbfNumber: "123456",
+      email: "player@example.com",
+      password: "safe-password",
+    });
+
+    expect(result).toEqual({ ok: false, error: "WBF_NUMBER_NOT_FOUND" });
+    expect(authProvider.registerWithEmailPassword).not.toHaveBeenCalled();
   });
 
   it("rejects duplicate WBF numbers before creating an auth user", async () => {
