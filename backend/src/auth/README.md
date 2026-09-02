@@ -1,7 +1,12 @@
 # Auth
 
-Authentication and account security live here.
+Authentication services live here.
 
-Players should log in with a verified WBF number and a password of their choice. Passwords must be stored only as secure hashes. The auth layer should not know how WBF lookup works internally; it should depend on the WBF verification service.
+Players register with WBF number, email, and password. The email/password identity is handled by Supabase Auth, while the application login screen can still ask for WBF number and password.
 
-Account confirmation should be separate from ordinary session management so the app can support future verification improvements without changing login routes.
+The login flow is:
+
+1. Normalize the submitted WBF number.
+2. Find the player profile for that WBF number.
+3. Use the profile email to sign in through Supabase Auth.
+4. Return the Supabase session and linked player record.
