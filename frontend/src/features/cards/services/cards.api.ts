@@ -54,5 +54,12 @@ export const cardsApi = {
    */
   updateCard: async (cardId: string, updates: { title?: string; cardData?: any }): Promise<ConventionCard> => {
     return api.patch<ConventionCard>(`/cards/${cardId}`, updates);
+  },
+
+  /**
+   * Archiwizuje kartę konwencyjną (logiczne usunięcie z bazy)
+   */
+  archiveCard: async (cardId: string): Promise<ConventionCard> => {
+    return api.post<ConventionCard>(`/cards/${cardId}/archive`);
   }
 };

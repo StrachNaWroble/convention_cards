@@ -55,6 +55,20 @@ export const CardsList: React.FC<CardsListProps> = ({ onViewCard, onEditCard }) 
     }
   };
 
+  const handleDeleteCard = async (cardId: string) => {
+    if (!window.confirm("Are you sure you want to delete this convention card?")) {
+      return;
+    }
+    
+    try {
+      await cardsApi.archiveCard(cardId);
+      setCards(prev => prev.filter(c => c.id !== cardId));
+    } catch (err) {
+      console.error('Failed to delete card', err);
+      alert('Failed to delete card.');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center mb-8">
@@ -85,15 +99,29 @@ export const CardsList: React.FC<CardsListProps> = ({ onViewCard, onEditCard }) 
               onClick={() => onViewCard?.(card.id)}
               className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-6 flex flex-col hover:bg-white/10 transition-colors cursor-pointer shadow-lg hover:shadow-indigo-500/20"
             >
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-lg font-semibold text-white">{card.title || 'Untitled Card'}</h3>
-                <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                  card.status === 'active' ? 'bg-green-500/20 text-green-300' :
-                  card.status === 'draft' ? 'bg-gray-500/20 text-gray-300' :
-                  'bg-blue-500/20 text-blue-300'
-                }`}>
-                  {card.status.replace(/_/g, ' ')}
-                </span>
+              <div className="flex justify-between items-start mb-4 gap-2">
+                <h3 className="text-lg font-semibold text-white flex-1">{card.title || 'Untitled Card'}</h3>
+                <div className="flex items-center gap-2">
+                  <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+                    card.status === 'active' ? 'bg-green-500/20 text-green-300' :
+                    card.status === 'draft' ? 'bg-gray-500/20 text-gray-300' :
+                    'bg-blue-500/20 text-blue-300'
+                  }`}>
+                    {card.status.replace(/_/g, ' ')}
+                  </span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteCard(card.id);
+                    }}
+                    className="text-gray-500 hover:text-red-400 transition-colors p-1 rounded-full hover:bg-white/5"
+                    title="Delete card"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
               </div>
               <p className="text-sm text-gray-400 mb-6 flex-1">
                 Last updated: {new Date(card.updatedAt).toLocaleDateString()}
