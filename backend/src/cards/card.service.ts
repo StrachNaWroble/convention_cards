@@ -4,7 +4,7 @@ import type { PartnershipRepository } from "../partnerships/partnership.reposito
 import type { Player } from "../players/player.types.js";
 import type { CardValidationResult, CardValidationService } from "../validation/index.js";
 import type { CardRepository } from "./card.repository.js";
-import type { ConventionCard, CreateCardDraftInput, UpdateCardDraftInput } from "./card.types.js";
+import type { CardListFilters, ConventionCard, CreateCardDraftInput, UpdateCardDraftInput } from "./card.types.js";
 
 const MAX_REJECTION_REASON_LENGTH = 1000;
 
@@ -31,7 +31,7 @@ export type CardServiceError =
 
 export type CardService = {
   createBlankDraft(input: CreateCardDraftInput): Promise<Result<ConventionCard, CardServiceError>>;
-  listMyCards(ownerPlayerId: string): Promise<Result<ConventionCard[], CardServiceError>>;
+  listMyCards(ownerPlayerId: string, filters?: CardListFilters): Promise<Result<ConventionCard[], CardServiceError>>;
   listCardsForPartnerReview(player: Player): Promise<Result<ConventionCard[], CardServiceError>>;
   getMyCard(cardId: string, ownerPlayerId: string): Promise<Result<ConventionCard, CardServiceError>>;
   validateForActivation(cardId: string, ownerPlayerId: string): Promise<Result<CardValidationResult, CardServiceError>>;
@@ -92,8 +92,8 @@ export function createCardService({
       }
     },
 
-    async listMyCards(ownerPlayerId) {
-      return ok(await cards.listByOwner(ownerPlayerId));
+    async listMyCards(ownerPlayerId, filters) {
+      return ok(await cards.listByOwner(ownerPlayerId, filters));
     },
 
     async listCardsForPartnerReview(player) {

@@ -248,7 +248,59 @@ describe("card routes", () => {
     });
 
     expect(response.status).toBe(200);
-    expect(cards.listMyCards).toHaveBeenCalledWith("player-1");
+    expect(cards.listMyCards).toHaveBeenCalledWith("player-1", {
+      includeArchived: false,
+      statuses: undefined,
+    });
+  });
+
+  it("passes card list filters to the card service", async () => {
+    const cards = createCardService();
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards,
+      partnerships: createPartnershipService(),
+      playerProfiles: createPlayerProfileService(),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/cards?status=draft,active&includeArchived=true", {
+      headers: {
+        authorization: "Bearer access-token",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(cards.listMyCards).toHaveBeenCalledWith("player-1", {
+      includeArchived: true,
+      statuses: ["draft", "active"],
+    });
+  });
+
+  it("rejects unsupported card list status filters", async () => {
+    const cards = createCardService();
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards,
+      partnerships: createPartnershipService(),
+      playerProfiles: createPlayerProfileService(),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/cards?status=deleted", {
+      headers: {
+        authorization: "Bearer access-token",
+      },
+    });
+
+    expect(response.status).toBe(422);
+    expect(cards.listMyCards).not.toHaveBeenCalled();
   });
 
   it("creates a blank draft for the signed-in player", async () => {

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { ActivityWriter } from "../../../backend/src/activity/index.js";
 import { createCardService } from "../../../backend/src/cards/card.service.js";
 import type { CardRepository } from "../../../backend/src/cards/card.repository.js";
-import type { CardStatus, ConventionCard, PartnerCardReviewStatus } from "../../../backend/src/cards/card.types.js";
+import type { CardListFilters, CardStatus, ConventionCard, PartnerCardReviewStatus } from "../../../backend/src/cards/card.types.js";
 import type { PartnershipRepository } from "../../../backend/src/partnerships/partnership.repository.js";
 import type { Partnership } from "../../../backend/src/partnerships/partnership.types.js";
 import type { Player } from "../../../backend/src/players/player.types.js";
@@ -103,8 +103,18 @@ function createCardRepository(seed: ConventionCard[] = []): CardRepository {
       return card;
     },
 
-    async listByOwner(ownerPlayerId) {
-      return cards.filter((card) => card.ownerPlayerId === ownerPlayerId);
+    async listByOwner(ownerPlayerId, filters: CardListFilters = {}) {
+      return cards.filter((card) => {
+        if (card.ownerPlayerId !== ownerPlayerId) {
+          return false;
+        }
+
+        if (filters.statuses?.length) {
+          return filters.statuses.includes(card.status);
+        }
+
+        return filters.includeArchived === true || card.status !== "archived";
+      });
     },
 
     async listPendingReviewForPartner(playerId, wbfNumber) {
@@ -281,6 +291,26 @@ describe("card service", () => {
         status: "draft",
       },
     });
+  });
+
+  it("lists owned cards with status filters and archived cards opt-in", async () => {
+    const repository = createCardRepository([
+      buildCard({ id: "card-1", status: "draft" }),
+      buildCard({ id: "card-2", status: "active" }),
+      buildCard({ id: "card-3", status: "archived" }),
+      buildCard({ id: "card-4", ownerPlayerId: "player-2", status: "draft" }),
+    ]);
+    const service = createCardService({ cards: repository });
+
+    const result = await service.listMyCards("player-1", {
+      statuses: ["draft", "active"],
+      includeArchived: true,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.data.map((card) => card.id)).toEqual(["card-1", "card-2"]);
   });
 
   it("autosaves draft card data without requiring completed WBF fields", async () => {

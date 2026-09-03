@@ -1,9 +1,10 @@
-import { and, desc, eq, or } from "drizzle-orm";
+import { and, desc, eq, inArray, ne, or } from "drizzle-orm";
 
 import type { Database } from "../db/client.js";
 import { conventionCards, partnerships } from "../db/schema.js";
 import type {
   CardStatus,
+  CardListFilters,
   ConventionCard,
   ConventionCardData,
   CreateCardDraftInput,
@@ -23,7 +24,7 @@ type CreateCardDraftRecordInput = {
 export type CardRepository = {
   createDraft(input: CreateCardDraftRecordInput): Promise<ConventionCard>;
   createDraftRevisionFromCard(sourceCard: ConventionCard): Promise<ConventionCard>;
-  listByOwner(ownerPlayerId: string): Promise<ConventionCard[]>;
+  listByOwner(ownerPlayerId: string, filters?: CardListFilters): Promise<ConventionCard[]>;
   listPendingReviewForPartner(playerId: string, wbfNumber: string): Promise<ConventionCard[]>;
   findOwnedCard(cardId: string, ownerPlayerId: string): Promise<ConventionCard | null>;
   findDraftRevisionForSourceCard(sourceCardId: string, ownerPlayerId: string): Promise<ConventionCard | null>;
@@ -75,11 +76,19 @@ export function createDrizzleCardRepository(db: Database): CardRepository {
       return card;
     },
 
-    async listByOwner(ownerPlayerId) {
+    async listByOwner(ownerPlayerId, filters = {}) {
+      const conditions = [eq(conventionCards.ownerPlayerId, ownerPlayerId)];
+
+      if (filters.statuses?.length) {
+        conditions.push(inArray(conventionCards.status, filters.statuses));
+      } else if (!filters.includeArchived) {
+        conditions.push(ne(conventionCards.status, "archived"));
+      }
+
       return db
         .select()
         .from(conventionCards)
-        .where(eq(conventionCards.ownerPlayerId, ownerPlayerId))
+        .where(and(...conditions))
         .orderBy(desc(conventionCards.updatedAt));
     },
 
