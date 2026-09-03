@@ -18,7 +18,7 @@ export const RegisterView: React.FC<RegisterViewProps> = ({ onNavigateToLogin, o
     setGlobalError(null);
     
     try {
-      const result = await authApi.register(data);
+      await authApi.register(data);
       if (onRegisterSuccess) {
         onRegisterSuccess();
       }

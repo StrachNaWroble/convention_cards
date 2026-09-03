@@ -31,8 +31,10 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 
   // W tym miejscu w przyszłości można dodawać token z localStorage/stanu
-  // const token = localStorage.getItem('token');
-  // if (token) headers.set('Authorization', `Bearer ${token}`);
+  const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
 
   const response = await fetch(url, {
     ...options,
@@ -65,5 +67,6 @@ export const api = {
   get: <T>(endpoint: string, options?: RequestInit) => request<T>(endpoint, { ...options, method: 'GET' }),
   post: <T>(endpoint: string, body: any, options?: RequestInit) => request<T>(endpoint, { ...options, method: 'POST', body: JSON.stringify(body) }),
   put: <T>(endpoint: string, body: any, options?: RequestInit) => request<T>(endpoint, { ...options, method: 'PUT', body: JSON.stringify(body) }),
+  patch: <T>(endpoint: string, body: any, options?: RequestInit) => request<T>(endpoint, { ...options, method: 'PATCH', body: JSON.stringify(body) }),
   delete: <T>(endpoint: string, options?: RequestInit) => request<T>(endpoint, { ...options, method: 'DELETE' }),
 };

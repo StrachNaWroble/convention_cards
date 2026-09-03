@@ -13,12 +13,21 @@ export const LoginView: React.FC<LoginViewProps> = ({ onNavigateToRegister, onLo
   const [isLoading, setIsLoading] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
 
-  const handleLoginSubmit = async (data: LoginFormData) => {
+  const handleLoginSubmit = async (data: LoginFormData, rememberMe: boolean) => {
     setIsLoading(true);
     setGlobalError(null);
     
     try {
       const result = await authApi.login(data);
+      if (result.session?.accessToken) {
+        if (rememberMe) {
+          localStorage.setItem('token', result.session.accessToken);
+          sessionStorage.removeItem('token');
+        } else {
+          sessionStorage.setItem('token', result.session.accessToken);
+          localStorage.removeItem('token');
+        }
+      }
       if (onLoginSuccess) {
         onLoginSuccess();
       }
