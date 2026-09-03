@@ -118,7 +118,7 @@ export const CardView: React.FC<CardViewProps> = ({ cardId, onBack, onEdit, onPr
         </div>
       </div>
 
-      {/* Card title — hidden on print (already in WBF card header) */}
+      {/* Card title — hidden on print (already in convention card header) */}
       <p className="no-print text-gray-400 text-xs text-right">
         {card.title} · Last updated: {new Date(card.updatedAt).toLocaleDateString()}
       </p>
@@ -128,7 +128,7 @@ export const CardView: React.FC<CardViewProps> = ({ cardId, onBack, onEdit, onPr
 
         {/* Page 1 — read-only preview */}
         <div className="w-full max-w-[297mm] min-h-[210mm] flex flex-col font-sans bg-white shadow-xl border border-gray-300 print-page">
-          <PageOneForm data={card.cardData} onChange={noop} />
+          <PageOneForm data={card.cardData} title={card.title} onChange={noop} />
         </div>
 
         {/* Page 2 — Openings table, read-only */}

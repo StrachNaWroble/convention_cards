@@ -2,10 +2,11 @@ import React from 'react';
 
 interface PageOneFormProps {
   data: Record<string, any>;
+  title?: string;
   onChange: (path: string[], value: string) => void;
 }
 
-export const PageOneForm: React.FC<PageOneFormProps> = ({ data, onChange }) => {
+export const PageOneForm: React.FC<PageOneFormProps> = ({ data, title, onChange }) => {
   const page1 = data.page1 || {};
 
   const handleInputChange = (path: string[], value: string) => {
@@ -169,9 +170,11 @@ export const PageOneForm: React.FC<PageOneFormProps> = ({ data, onChange }) => {
         {renderTextareaField("Special, Artificial & Competitive Dbls/Rdls", ["doubles", "special"], 3)}
       </div>
 
-      {/* Column 3: W B F CONVENTION CARD */}
+      {/* Column 3: CONVENTION CARD */}
       <div className="w-1/3 flex flex-col bg-white min-h-0">
-        <div className="text-center font-bold text-xs uppercase py-1 border-b-2 border-black bg-gray-100 tracking-widest shrink-0">W B F Convention Card</div>
+        <div className="text-center font-bold text-xs uppercase py-1 border-b-2 border-black bg-gray-100 tracking-widest shrink-0 truncate px-2" title={title || "Convention Card"}>
+          {title || "Convention Card"}
+        </div>
 
         {/* Meta info */}
         <div className="flex flex-col border-b-2 border-black shrink-0">

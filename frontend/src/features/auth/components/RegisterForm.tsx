@@ -62,7 +62,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, isLoading 
           </svg>
         </div>
         <h2 className="text-3xl font-extrabold text-white tracking-tight">Create Account</h2>
-        <p className="mt-2 text-sm text-gray-300 font-medium">Join WBF Convention Cards</p>
+        <p className="mt-2 text-sm text-gray-300 font-medium">Join Bridge Convention Cards</p>
       </div>
 
       <form className="relative z-10 mt-8 space-y-5" onSubmit={handleSubmit} noValidate>

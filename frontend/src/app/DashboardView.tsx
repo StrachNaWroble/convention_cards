@@ -65,7 +65,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onLogout }) => {
             <span className="text-white font-bold text-lg leading-none">♠️</span>
           </div>
           <span className="font-bold text-lg tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">
-            WBF Cards
+            Bridge Cards
           </span>
         </div>
 

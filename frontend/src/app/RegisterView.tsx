@@ -48,7 +48,7 @@ export const RegisterView: React.FC<RegisterViewProps> = ({ onNavigateToLogin, o
           <span className="text-3xl">♠️</span>
         </div>
         <h1 className="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-300 tracking-tight drop-shadow-sm">
-          WBF Convention Cards
+          Bridge Convention Cards
         </h1>
       </div>
 
@@ -65,7 +65,7 @@ export const RegisterView: React.FC<RegisterViewProps> = ({ onNavigateToLogin, o
       {/* Footer */}
       <div className="relative mt-8 z-10">
         <p className="text-xs text-slate-500 font-medium">
-          &copy; {new Date().getFullYear()} WBF Convention Cards. All rights reserved.
+          &copy; {new Date().getFullYear()} Bridge Convention Cards. All rights reserved.
         </p>
       </div>
     </div>

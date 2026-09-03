@@ -57,7 +57,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onNavigateToRegister, onLo
           <span className="text-4xl">♠️</span>
         </div>
         <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300 tracking-tight drop-shadow-sm">
-          WBF Convention Cards
+          Bridge Convention Cards
         </h1>
         <p className="mt-3 text-blue-200/70 font-medium tracking-wide max-w-md text-center">
           Official convention card management tool
@@ -77,7 +77,7 @@ export const LoginView: React.FC<LoginViewProps> = ({ onNavigateToRegister, onLo
       {/* Footer */}
       <div className="absolute bottom-6 z-10">
         <p className="text-xs text-slate-500 font-medium">
-          &copy; {new Date().getFullYear()} WBF Convention Cards. All rights reserved.
+          &copy; {new Date().getFullYear()} Bridge Convention Cards. All rights reserved.
         </p>
       </div>
     </div>

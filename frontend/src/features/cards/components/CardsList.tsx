@@ -144,7 +144,7 @@ export const CardsList: React.FC<CardsListProps> = ({ onViewCard, onEditCard }) 
             </div>
             <h3 className="text-lg font-medium text-white mb-2">No convention cards yet</h3>
             <p className="text-gray-400 text-sm text-center max-w-sm mb-6">
-              You don't have any convention cards. Create one to start playing with your partner using the WBF system.
+              You don't have any convention cards. Create one to start playing with your partner using standard systems.
             </p>
             <button className="text-indigo-400 hover:text-indigo-300 font-medium text-sm transition-colors">
               Learn how to create a card &rarr;

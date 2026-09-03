@@ -221,7 +221,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({ cardId, onBack, autoPrin
           {/* Page 1: General & Defense */}
           <div className="w-full max-w-[297mm] min-h-[210mm] flex flex-col font-sans bg-white shadow-xl border border-gray-300 print-page">
             {/* PageOneForm must fill the whole height - it uses flex-1 internally */}
-            <PageOneForm data={card.cardData} onChange={handlePageOneChange} />
+            <PageOneForm data={card.cardData} title={card.title} onChange={handlePageOneChange} />
           </div>
 
           {/* Page 2: Openings — table fills the whole page */}
