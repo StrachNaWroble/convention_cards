@@ -4,9 +4,10 @@ import { cardsApi, ConventionCard } from '../services/cards.api';
 interface CardViewProps {
   cardId: string;
   onBack: () => void;
+  onEdit?: () => void;
 }
 
-export const CardView: React.FC<CardViewProps> = ({ cardId, onBack }) => {
+export const CardView: React.FC<CardViewProps> = ({ cardId, onBack, onEdit }) => {
   const [card, setCard] = useState<ConventionCard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,13 +67,23 @@ export const CardView: React.FC<CardViewProps> = ({ cardId, onBack }) => {
         <div className="p-8 border-b border-white/10 bg-gradient-to-r from-white/[0.02] to-transparent">
           <div className="flex justify-between items-start mb-4">
             <h2 className="text-3xl font-bold text-white tracking-tight">{card.title || 'Untitled Card'}</h2>
-            <span className={`px-3 py-1 text-sm rounded-full font-medium shadow-sm ${
-              card.status === 'active' ? 'bg-green-500/20 text-green-300 border border-green-500/30' :
-              card.status === 'draft' ? 'bg-gray-500/20 text-gray-300 border border-gray-500/30' :
-              'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-            }`}>
-              {card.status.replace(/_/g, ' ')}
-            </span>
+            <div className="flex gap-3 items-center">
+              <span className={`px-3 py-1 text-sm rounded-full font-medium shadow-sm ${
+                card.status === 'active' ? 'bg-green-500/20 text-green-300 border border-green-500/30' :
+                card.status === 'draft' ? 'bg-gray-500/20 text-gray-300 border border-gray-500/30' :
+                'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+              }`}>
+                {card.status.replace(/_/g, ' ')}
+              </span>
+              {onEdit && (
+                <button
+                  onClick={onEdit}
+                  className="px-4 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded shadow transition-colors"
+                >
+                  Edit
+                </button>
+              )}
+            </div>
           </div>
           <div className="flex gap-6 text-sm text-gray-400">
             <p>Created: <span className="text-gray-300">{new Date(card.createdAt).toLocaleDateString()}</span></p>
@@ -95,8 +106,8 @@ export const CardView: React.FC<CardViewProps> = ({ cardId, onBack }) => {
           ) : (
             <div className="py-12 text-center border border-dashed border-white/10 rounded-xl bg-white/[0.01]">
               <p className="text-gray-400">This convention card has no data yet.</p>
-              {card.status === 'draft' && (
-                <button className="mt-4 px-4 py-2 bg-indigo-500/20 text-indigo-300 rounded-lg hover:bg-indigo-500/30 transition-colors">
+              {card.status === 'draft' && onEdit && (
+                <button onClick={onEdit} className="mt-4 px-4 py-2 bg-indigo-500/20 text-indigo-300 rounded-lg hover:bg-indigo-500/30 transition-colors">
                   Edit Card Data
                 </button>
               )}

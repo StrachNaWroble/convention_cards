@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CardsList } from '../features/cards/components/CardsList';
 import { CardView } from '../features/cards/components/CardView';
+import { CardEditor } from '../features/cards/components/CardEditor';
 import { authApi } from '../features/auth/services/auth.api';
 
 interface DashboardViewProps {
@@ -8,7 +9,7 @@ interface DashboardViewProps {
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'cards' | 'card_details' | 'partnerships' | 'settings'>('cards');
+  const [activeTab, setActiveTab] = useState<'cards' | 'card_details' | 'card_editor' | 'partnerships' | 'settings'>('cards');
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -27,6 +28,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onLogout }) => {
   const handleViewCard = (cardId: string) => {
     setSelectedCardId(cardId);
     setActiveTab('card_details');
+  };
+
+  const handleEditCard = (cardId: string) => {
+    setSelectedCardId(cardId);
+    setActiveTab('card_editor');
   };
 
   const handleBackToCards = () => {
@@ -132,9 +138,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onLogout }) => {
 
         <main className="flex-1 overflow-y-auto p-8">
           <div className="max-w-6xl mx-auto">
-            {activeTab === 'cards' && <CardsList onViewCard={handleViewCard} />}
+            {activeTab === 'cards' && <CardsList onViewCard={handleViewCard} onEditCard={handleEditCard} />}
             {activeTab === 'card_details' && selectedCardId && (
-              <CardView cardId={selectedCardId} onBack={handleBackToCards} />
+              <CardView cardId={selectedCardId} onBack={handleBackToCards} onEdit={() => handleEditCard(selectedCardId)} />
+            )}
+            {activeTab === 'card_editor' && selectedCardId && (
+              <CardEditor cardId={selectedCardId} onBack={() => handleViewCard(selectedCardId)} />
             )}
             {activeTab === 'partnerships' && (
               <div className="text-center py-20 text-gray-400">

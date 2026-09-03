@@ -3,9 +3,10 @@ import { cardsApi, ConventionCard } from '../services/cards.api';
 
 interface CardsListProps {
   onViewCard?: (cardId: string) => void;
+  onEditCard?: (cardId: string) => void;
 }
 
-export const CardsList: React.FC<CardsListProps> = ({ onViewCard }) => {
+export const CardsList: React.FC<CardsListProps> = ({ onViewCard, onEditCard }) => {
   const [cards, setCards] = useState<ConventionCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -40,8 +41,10 @@ export const CardsList: React.FC<CardsListProps> = ({ onViewCard }) => {
       const newCard = await cardsApi.createCard(title);
       setCards(prev => [newCard, ...prev]);
       
-      // Optionally open the card immediately
-      if (onViewCard) {
+      // Open the card editor immediately for a new card
+      if (onEditCard) {
+        onEditCard(newCard.id);
+      } else if (onViewCard) {
         onViewCard(newCard.id);
       }
     } catch (err) {
