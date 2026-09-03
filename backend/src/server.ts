@@ -10,6 +10,7 @@ import { createDatabaseClient } from "./db/index.js";
 import { createDrizzleCardRepository } from "./cards/card.repository.js";
 import { createApp } from "./app.js";
 import { createCardExportService } from "./exports/index.js";
+import { createJsonLogger } from "./observability/index.js";
 import { createDrizzlePartnershipRepository, createPartnershipService } from "./partnerships/index.js";
 import { createPlayerProfileService } from "./players/playerProfile.service.js";
 import { createDrizzlePlayerRepository } from "./players/player.repository.js";
@@ -20,6 +21,7 @@ import { createCardValidationService } from "./validation/index.js";
 import { createWbfPeopleFinderService } from "./wbf-verification/index.js";
 
 const env = loadAppEnv();
+const logger = createJsonLogger({ level: env.logLevel });
 const database = createDatabaseClient(env.databaseUrl, { ssl: true });
 const authProvider = createSupabaseAuthProvider(env);
 const playerRepository = createDrizzlePlayerRepository(database.db);
@@ -88,6 +90,8 @@ const app = createApp({
   wbfVerification: createWbfPeopleFinderService(),
 }, {
   cors: env.cors,
+  logger,
+  requestLogging: env.requestLoggingEnabled,
 });
 const port = Number(process.env.PORT ?? "3000");
 
@@ -97,6 +101,9 @@ serve(
     port,
   },
   () => {
-    console.log(`API server listening on http://localhost:${port}`);
+    logger.info("server.started", {
+      port,
+      url: `http://localhost:${port}`,
+    });
   },
 );

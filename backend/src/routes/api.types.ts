@@ -29,5 +29,6 @@ export type ApiBindings = {
   Variables: {
     accessToken: string;
     player: Player;
+    requestId?: string;
   };
 };

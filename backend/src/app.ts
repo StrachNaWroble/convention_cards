@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 
 import type { AppCorsConfig } from "./config/cors.js";
+import { consoleLogger, createRequestLoggingMiddleware, type AppLogger } from "./observability/index.js";
 import { createActivityRoutes } from "./routes/activity.routes.js";
 import { createAuthRoutes } from "./routes/auth.routes.js";
 import { createCardRoutes } from "./routes/card.routes.js";
@@ -14,6 +15,8 @@ import type { ApiBindings, ApiServices } from "./routes/index.js";
 
 export type AppOptions = {
   cors?: AppCorsConfig;
+  logger?: AppLogger;
+  requestLogging?: boolean;
 };
 
 const defaultCorsConfig: AppCorsConfig = {
@@ -35,14 +38,19 @@ function createCorsOriginMatcher(allowedOrigins: string[]) {
 export function createApp(services: ApiServices, options: AppOptions = {}): Hono<ApiBindings> {
   const app = new Hono<ApiBindings>();
   const corsConfig = options.cors ?? defaultCorsConfig;
+  const logger = options.logger ?? consoleLogger;
+
+  if (options.requestLogging === true) {
+    app.use("*", createRequestLoggingMiddleware({ logger }));
+  }
 
   app.use(
     "*",
     cors({
       origin: createCorsOriginMatcher(corsConfig.allowedOrigins),
       allowMethods: ["GET", "HEAD", "POST", "PATCH", "DELETE", "OPTIONS"],
-      allowHeaders: ["Authorization", "Content-Type"],
-      exposeHeaders: ["RateLimit-Limit", "RateLimit-Remaining", "RateLimit-Reset", "Retry-After"],
+      allowHeaders: ["Authorization", "Content-Type", "X-Request-Id"],
+      exposeHeaders: ["RateLimit-Limit", "RateLimit-Remaining", "RateLimit-Reset", "Retry-After", "X-Request-Id"],
       credentials: corsConfig.allowCredentials,
       maxAge: corsConfig.maxAgeSeconds,
     }),
@@ -75,7 +83,16 @@ export function createApp(services: ApiServices, options: AppOptions = {}): Hono
   });
 
   app.onError((error, context) => {
-    console.error(error);
+    const requestId = context.var.requestId;
+    logger.error("http.error", {
+      requestId,
+      method: context.req.method,
+      path: new URL(context.req.url).pathname,
+      errorName: error.name,
+      errorMessage: error.message,
+      stack: error.stack,
+    });
+
     return context.json(
       {
         error: {
