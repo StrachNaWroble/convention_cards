@@ -60,6 +60,7 @@ function createCardService(): CardService {
     listMyCards: vi.fn(async () => ok([])),
     listCardsForPartnerReview: vi.fn(async () => ok([])),
     getMyCard: vi.fn(),
+    validateForActivation: vi.fn(async () => ok({ valid: true, issues: [] })),
     createRevisionFromRejectedCard: vi.fn(),
     autosaveDraft: vi.fn(),
     submitForPartnerApproval: vi.fn(),

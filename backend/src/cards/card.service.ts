@@ -2,7 +2,7 @@ import type { ActivityWriter } from "../activity/index.js";
 import { err, ok, type Result } from "../shared/result.js";
 import type { PartnershipRepository } from "../partnerships/partnership.repository.js";
 import type { Player } from "../players/player.types.js";
-import type { CardValidationService } from "../validation/index.js";
+import type { CardValidationResult, CardValidationService } from "../validation/index.js";
 import type { CardRepository } from "./card.repository.js";
 import type { ConventionCard, CreateCardDraftInput, UpdateCardDraftInput } from "./card.types.js";
 
@@ -25,6 +25,7 @@ export type CardServiceError =
   | "CARD_NOT_PENDING_REVIEW"
   | "CARD_NOT_REVISIONABLE"
   | "CARD_REVISION_ALREADY_EXISTS"
+  | "CARD_VALIDATION_NOT_CONFIGURED"
   | "PARTNERSHIP_NOT_APPROVED"
   | "REJECTION_REASON_TOO_LONG";
 
@@ -33,6 +34,7 @@ export type CardService = {
   listMyCards(ownerPlayerId: string): Promise<Result<ConventionCard[], CardServiceError>>;
   listCardsForPartnerReview(player: Player): Promise<Result<ConventionCard[], CardServiceError>>;
   getMyCard(cardId: string, ownerPlayerId: string): Promise<Result<ConventionCard, CardServiceError>>;
+  validateForActivation(cardId: string, ownerPlayerId: string): Promise<Result<CardValidationResult, CardServiceError>>;
   createRevisionFromRejectedCard(cardId: string, ownerPlayerId: string): Promise<Result<ConventionCard, CardServiceError>>;
   autosaveDraft(input: UpdateCardDraftInput): Promise<Result<ConventionCard, CardServiceError>>;
   submitForPartnerApproval(cardId: string, ownerPlayerId: string): Promise<Result<ConventionCard, CardServiceError>>;
@@ -106,6 +108,20 @@ export function createCardService({
       }
 
       return ok(card);
+    },
+
+    async validateForActivation(cardId, ownerPlayerId) {
+      const card = await cards.findOwnedCard(cardId, ownerPlayerId);
+
+      if (!card) {
+        return err("CARD_NOT_FOUND");
+      }
+
+      if (!validation) {
+        return err("CARD_VALIDATION_NOT_CONFIGURED", "Card validation service is not configured.");
+      }
+
+      return ok(validation.validateForActivation(card));
     },
 
     async createRevisionFromRejectedCard(cardId, ownerPlayerId) {

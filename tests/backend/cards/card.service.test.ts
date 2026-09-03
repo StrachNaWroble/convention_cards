@@ -373,6 +373,46 @@ describe("card service", () => {
     expect(result).toEqual({ ok: false, error: "CARD_NOT_EDITABLE" });
   });
 
+  it("validates an owned card before activation without changing its status", async () => {
+    const repository = createCardRepository([
+      buildCard({
+        title: "",
+        partnershipId: null,
+      }),
+    ]);
+    const service = createCardService({
+      cards: repository,
+      validation: createValidationService(false),
+    });
+
+    const result = await service.validateForActivation("card-1", "player-1");
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.data).toEqual({
+      valid: false,
+      issues: [
+        {
+          code: "CARD_DATA_SECTION_REQUIRED",
+          path: "cardData",
+          message: "Card data is required before activation.",
+        },
+      ],
+    });
+  });
+
+  it("blocks validation for cards not owned by the player", async () => {
+    const service = createCardService({
+      cards: createCardRepository([buildCard()]),
+      validation: createValidationService(),
+    });
+
+    const result = await service.validateForActivation("card-1", "player-2");
+
+    expect(result).toEqual({ ok: false, error: "CARD_NOT_FOUND" });
+  });
+
   it("creates a draft revision from a rejected card", async () => {
     const repository = createCardRepository([
       buildCard({

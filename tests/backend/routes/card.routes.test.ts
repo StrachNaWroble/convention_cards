@@ -85,6 +85,7 @@ function createCardService(card = buildCard()): CardService {
     listMyCards: vi.fn(async () => ok([card])),
     listCardsForPartnerReview: vi.fn(async () => ok([buildCard({ status: "pending_partner_approval" })])),
     getMyCard: vi.fn(async () => ok(card)),
+    validateForActivation: vi.fn(async () => ok({ valid: true, issues: [] })),
     createRevisionFromRejectedCard: vi.fn(async () =>
       ok(buildCard({ ...card, id: "card-2", sourceCardId: card.id, revisionNumber: card.revisionNumber + 1 })),
     ),
@@ -358,6 +359,55 @@ describe("card routes", () => {
       error: {
         code: "CARD_NOT_EDITABLE",
         message: "This card cannot be edited in its current status.",
+      },
+    });
+  });
+
+  it("returns validation issues for an owned card", async () => {
+    const cards = createCardService();
+    vi.mocked(cards.validateForActivation).mockResolvedValueOnce(
+      ok({
+        valid: false,
+        issues: [
+          {
+            code: "CARD_PARTNERSHIP_REQUIRED",
+            path: "partnershipId",
+            message: "Card must be linked to a partnership before activation.",
+          },
+        ],
+      }),
+    );
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards,
+      partnerships: createPartnershipService(),
+      playerProfiles: createPlayerProfileService(),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/cards/card-1/validation", {
+      headers: {
+        authorization: "Bearer access-token",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(cards.validateForActivation).toHaveBeenCalledWith("card-1", "player-1");
+    expect(await response.json()).toEqual({
+      data: {
+        validation: {
+          valid: false,
+          issues: [
+            {
+              code: "CARD_PARTNERSHIP_REQUIRED",
+              path: "partnershipId",
+              message: "Card must be linked to a partnership before activation.",
+            },
+          ],
+        },
       },
     });
   });

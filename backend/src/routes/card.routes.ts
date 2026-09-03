@@ -77,6 +77,10 @@ function cardErrorResponse(context: Parameters<typeof jsonError>[0], error: stri
     return jsonError(context, 409, error, "This rejected card already has an open draft revision.");
   }
 
+  if (error === "CARD_VALIDATION_NOT_CONFIGURED") {
+    return jsonError(context, 500, error, message ?? "Card validation service is not configured.");
+  }
+
   if (error === "CARD_NOT_READY_FOR_ACTIVATION" || error === "PARTNERSHIP_NOT_APPROVED") {
     return jsonError(context, 409, error, message ?? "This card is not ready for activation.");
   }
@@ -185,6 +189,16 @@ export function createCardRoutes(services: ApiServices): Hono<ApiBindings> {
     }
 
     return jsonOk(context, result.data);
+  });
+
+  routes.get("/:cardId/validation", async (context) => {
+    const result = await services.cards.validateForActivation(context.req.param("cardId"), context.get("player").id);
+
+    if (!result.ok) {
+      return cardErrorResponse(context, result.error, result.message);
+    }
+
+    return jsonOk(context, { validation: result.data });
   });
 
   routes.patch("/:cardId", async (context) => {
