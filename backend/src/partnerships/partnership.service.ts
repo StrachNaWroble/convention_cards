@@ -1,3 +1,4 @@
+import type { ActivityWriter } from "../activity/index.js";
 import type { PlayerRepository } from "../players/player.repository.js";
 import type { Player } from "../players/player.types.js";
 import { normalizeWbfNumber } from "../players/player.types.js";
@@ -25,6 +26,7 @@ export type PartnershipService = {
 type PartnershipServiceDeps = {
   partnerships: PartnershipRepository;
   players: PlayerRepository;
+  activity?: ActivityWriter;
   now?: () => Date;
 };
 
@@ -35,6 +37,7 @@ function isInvitedPartner(partnership: Partnership, player: Player): boolean {
 export function createPartnershipService({
   partnerships,
   players,
+  activity,
   now = () => new Date(),
 }: PartnershipServiceDeps): PartnershipService {
   return {
@@ -57,6 +60,18 @@ export function createPartnershipService({
           ownerPlayerId: input.ownerPlayerId,
           partnerPlayerId: partner?.id ?? null,
           partnerWbfNumber,
+        });
+
+        await activity?.recordEvent({
+          eventType: "partnership.created",
+          actorPlayerId: input.ownerPlayerId,
+          entityType: "partnership",
+          entityId: partnership.id,
+          partnershipId: partnership.id,
+          metadata: {
+            partnerWbfNumber,
+            partnerPlayerId: partnership.partnerPlayerId,
+          },
         });
 
         return ok(partnership);
@@ -97,6 +112,14 @@ export function createPartnershipService({
         return err("PARTNERSHIP_NOT_FOUND");
       }
 
+      await activity?.recordEvent({
+        eventType: "partnership.approved",
+        actorPlayerId: player.id,
+        entityType: "partnership",
+        entityId: updated.id,
+        partnershipId: updated.id,
+      });
+
       return ok(updated);
     },
 
@@ -123,6 +146,14 @@ export function createPartnershipService({
         return err("PARTNERSHIP_NOT_FOUND");
       }
 
+      await activity?.recordEvent({
+        eventType: "partnership.declined",
+        actorPlayerId: player.id,
+        entityType: "partnership",
+        entityId: updated.id,
+        partnershipId: updated.id,
+      });
+
       return ok(updated);
     },
 
@@ -138,6 +169,14 @@ export function createPartnershipService({
       if (!updated) {
         return err("PARTNERSHIP_NOT_FOUND");
       }
+
+      await activity?.recordEvent({
+        eventType: "partnership.archived",
+        actorPlayerId: player.id,
+        entityType: "partnership",
+        entityId: updated.id,
+        partnershipId: updated.id,
+      });
 
       return ok(updated);
     },

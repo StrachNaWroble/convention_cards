@@ -145,3 +145,26 @@ export const shareLinks = pgTable(
     tokenHashIndex: uniqueIndex("share_links_token_hash_idx").on(table.tokenHash),
   }),
 );
+
+export const activityEvents = pgTable(
+  "activity_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    eventType: text("event_type").notNull(),
+    actorPlayerId: uuid("actor_player_id").references(() => players.id, { onDelete: "set null" }),
+    entityType: text("entity_type").notNull(),
+    entityId: uuid("entity_id"),
+    cardId: uuid("card_id").references(() => conventionCards.id, { onDelete: "cascade" }),
+    partnershipId: uuid("partnership_id").references(() => partnerships.id, { onDelete: "set null" }),
+    shareLinkId: uuid("share_link_id").references(() => shareLinks.id, { onDelete: "set null" }),
+    metadata: jsonb("metadata").$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    actorIndex: index("activity_events_actor_player_id_idx").on(table.actorPlayerId),
+    cardIndex: index("activity_events_card_id_idx").on(table.cardId),
+    partnershipIndex: index("activity_events_partnership_id_idx").on(table.partnershipId),
+    shareLinkIndex: index("activity_events_share_link_id_idx").on(table.shareLinkId),
+    createdAtIndex: index("activity_events_created_at_idx").on(table.createdAt),
+  }),
+);

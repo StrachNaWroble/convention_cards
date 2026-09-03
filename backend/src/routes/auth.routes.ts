@@ -124,6 +124,7 @@ export function createAuthRoutes(services: ApiServices): Hono<ApiBindings> {
 
     const player = context.get("player");
     const result = await services.auth.changePassword({
+      playerId: player.id,
       authUserId: player.authUserId,
       email: player.email,
       currentPassword: body.data.currentPassword,

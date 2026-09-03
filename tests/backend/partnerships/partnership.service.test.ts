@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import type { ActivityWriter } from "../../../backend/src/activity/index.js";
 import type { PartnershipRepository } from "../../../backend/src/partnerships/partnership.repository.js";
 import { createPartnershipService } from "../../../backend/src/partnerships/partnership.service.js";
 import type { CreatePartnershipRecordInput, Partnership, PartnershipStatus } from "../../../backend/src/partnerships/partnership.types.js";
@@ -126,6 +127,12 @@ function createPartnershipRepository(seed: Partnership[] = []): PartnershipRepos
   };
 }
 
+function createActivityWriter(): ActivityWriter {
+  return {
+    recordEvent: vi.fn(),
+  };
+}
+
 describe("partnership service", () => {
   it("creates a pending partnership by partner WBF number", async () => {
     const owner = buildPlayer();
@@ -135,9 +142,11 @@ describe("partnership service", () => {
       wbfNumber: "654321",
       email: "partner@example.com",
     });
+    const activity = createActivityWriter();
     const service = createPartnershipService({
       partnerships: createPartnershipRepository(),
       players: createPlayerRepository([owner, partner]),
+      activity,
     });
 
     const result = await service.createPartnership({
@@ -152,6 +161,17 @@ describe("partnership service", () => {
     expect(result.data.status).toBe("pending");
     expect(result.data.partnerPlayerId).toBe("player-2");
     expect(result.data.partnerWbfNumber).toBe("654321");
+    expect(activity.recordEvent).toHaveBeenCalledWith({
+      eventType: "partnership.created",
+      actorPlayerId: "player-1",
+      entityType: "partnership",
+      entityId: "partnership-1",
+      partnershipId: "partnership-1",
+      metadata: {
+        partnerWbfNumber: "654321",
+        partnerPlayerId: "player-2",
+      },
+    });
   });
 
   it("rejects creating a partnership with yourself", async () => {

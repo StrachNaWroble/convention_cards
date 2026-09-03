@@ -1,3 +1,4 @@
+import type { ActivityWriter } from "../activity/index.js";
 import type { PlayerRepository } from "../players/player.repository.js";
 import { normalizeEmail, normalizeWbfNumber } from "../players/player.types.js";
 import { err, ok, type Result } from "../shared/result.js";
@@ -37,6 +38,7 @@ type AuthServiceDeps = {
   wbfVerification?: WbfVerificationService;
   requireWbfVerification?: boolean;
   passwordResetRedirectTo?: string;
+  activity?: ActivityWriter;
   now?: () => Date;
 };
 
@@ -46,6 +48,7 @@ export function createAuthService({
   wbfVerification,
   requireWbfVerification = false,
   passwordResetRedirectTo,
+  activity,
   now = () => new Date(),
 }: AuthServiceDeps): AuthService {
   return {
@@ -90,6 +93,17 @@ export function createAuthService({
           verificationCheckedAt: verification?.checkedAt,
         });
 
+        await activity?.recordEvent({
+          eventType: "player.registered",
+          actorPlayerId: player.id,
+          entityType: "player",
+          entityId: player.id,
+          metadata: {
+            wbfNumber: player.wbfNumber,
+            verificationStatus: player.verificationStatus,
+          },
+        });
+
         return ok({ player, authUser: authUser.data });
       } catch (error) {
         return err("PLAYER_CREATE_FAILED", error instanceof Error ? error.message : "Could not create player.");
@@ -110,6 +124,12 @@ export function createAuthService({
       }
 
       await players.markLogin(player.authUserId, now());
+      await activity?.recordEvent({
+        eventType: "player.logged_in",
+        actorPlayerId: player.id,
+        entityType: "player",
+        entityId: player.id,
+      });
 
       return ok({ player, session: session.data });
     },
@@ -128,6 +148,13 @@ export function createAuthService({
         return err("AUTH_PROVIDER_ERROR", reset.message);
       }
 
+      await activity?.recordEvent({
+        eventType: "player.password_reset_requested",
+        actorPlayerId: player.id,
+        entityType: "player",
+        entityId: player.id,
+      });
+
       return ok({ resetEmailQueued: true });
     },
 
@@ -143,6 +170,16 @@ export function createAuthService({
       if (!updatedPassword.ok) {
         return err("AUTH_PROVIDER_ERROR", updatedPassword.message);
       }
+
+      await activity?.recordEvent({
+        eventType: "player.password_changed",
+        actorPlayerId: input.playerId,
+        entityType: "player",
+        entityId: input.playerId,
+        metadata: {
+          authUserId: input.authUserId,
+        },
+      });
 
       return ok({ passwordChanged: true });
     },

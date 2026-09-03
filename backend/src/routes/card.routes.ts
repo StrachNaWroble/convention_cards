@@ -213,6 +213,27 @@ export function createCardRoutes(services: ApiServices): Hono<ApiBindings> {
     return jsonOk(context, result.data);
   });
 
+  routes.get("/:cardId/history", async (context) => {
+    if (!services.activity) {
+      return jsonError(context, 500, "ACTIVITY_NOT_CONFIGURED", "Activity service is not configured.");
+    }
+
+    const result = await services.activity.listOwnedCardEvents(
+      context.req.param("cardId"),
+      context.get("player").id,
+    );
+
+    if (!result.ok) {
+      if (result.error === "CARD_NOT_FOUND") {
+        return jsonError(context, 404, result.error, "Card was not found.");
+      }
+
+      return jsonError(context, 400, result.error, result.message ?? "Could not load card history.");
+    }
+
+    return jsonOk(context, { events: result.data });
+  });
+
   routes.post("/:cardId/submit-for-approval", async (context) => {
     const result = await services.cards.submitForPartnerApproval(context.req.param("cardId"), context.get("player").id);
 

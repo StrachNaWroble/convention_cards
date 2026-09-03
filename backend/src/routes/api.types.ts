@@ -1,3 +1,4 @@
+import type { ActivityService } from "../activity/index.js";
 import type { AuthService } from "../auth/auth.service.js";
 import type { AuthProvider } from "../auth/auth.types.js";
 import type { CardService } from "../cards/card.service.js";
@@ -10,6 +11,7 @@ import type { TemplateService } from "../templates/template.service.js";
 import type { WbfVerificationService } from "../wbf-verification/index.js";
 
 export type ApiServices = {
+  activity?: ActivityService;
   auth: AuthService;
   authProvider: AuthProvider;
   cards: CardService;
