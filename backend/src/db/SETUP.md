@@ -53,6 +53,10 @@ This creates the first app tables:
 
 It also enables row-level security and adds ownership policies.
 
+The archived-card cleanup migration also enables Supabase Cron (`pg_cron`). If your
+project does not permit enabling it through SQL, enable the Cron module under
+`Integrations -> Cron` in the Supabase dashboard, then run the migration again.
+
 ## 3. Auth Model
 
 Users register with WBF number, email, and password.
@@ -88,3 +92,58 @@ CORS_ALLOWED_ORIGINS=http://localhost:5173,https://your-frontend.example.com
 The backend writes structured JSON logs to the server console. Request logs include the request id, method, path, status, duration, client IP when available, and authenticated player id when the route has one.
 
 Clients may send `X-Request-Id`; otherwise the backend creates one and returns it in the same response header. This makes frontend error reports easier to match with backend logs.
+
+## 7. Archived Card Cleanup
+
+Archiving is a soft delete. `POST /cards/:cardId/archive` changes the card status to
+`archived` and sets `archived_at`; no API route permanently deletes a card. The
+cleanup migration also removes the old owner DELETE policy and revokes direct
+DELETE permission from Supabase's `anon` and `authenticated` roles.
+
+Supabase Cron runs `purge-archived-convention-cards-daily` every day at 03:15 UTC.
+Each run permanently deletes at most 500 cards that have remained archived for
+more than 60 days. The database re-checks the archived status while holding a row
+lock immediately before deletion.
+
+Preview eligible cards in the Supabase SQL editor:
+
+```sql
+SELECT id, owner_player_id, archived_at
+FROM convention_cards
+WHERE status = 'archived'
+  AND archived_at < now() - interval '60 days'
+ORDER BY archived_at;
+```
+
+Manually run one cleanup batch from the SQL editor:
+
+```sql
+SELECT * FROM app_private.purge_archived_convention_cards(500);
+```
+
+Monitor scheduled runs in `Integrations -> Cron -> Jobs -> History`, or query:
+
+```sql
+SELECT status, return_message, start_time, end_time
+FROM cron.job_run_details
+WHERE jobid = (
+  SELECT jobid
+  FROM cron.job
+  WHERE jobname = 'purge-archived-convention-cards-daily'
+)
+ORDER BY start_time DESC
+LIMIT 20;
+```
+
+Permanent deletion records remain available to database administrators:
+
+```sql
+SELECT *
+FROM app_private.convention_card_deletion_log
+ORDER BY deleted_at DESC
+LIMIT 100;
+```
+
+Deleting a card cascades to its `share_links` and card-linked `activity_events`.
+Revisions derived from that card remain, but their `source_card_id` is set to null.
+All effects and the durable deletion log insert occur in the same transaction.
