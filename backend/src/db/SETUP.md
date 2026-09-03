@@ -17,6 +17,7 @@ Create a Supabase project and copy these values into `.env`:
 - `AUTH_RATE_LIMIT_MAX`: optional. Defaults to `20` requests per window for register/login.
 - `PASSWORD_RESET_RATE_LIMIT_MAX`: optional. Defaults to `5` requests per window.
 - `WBF_VERIFICATION_RATE_LIMIT_MAX`: optional. Defaults to `30` requests per window.
+- `MAX_REQUEST_BODY_BYTES`: optional. Defaults to `1000000` bytes.
 - `LOG_LEVEL`: optional. Defaults to `info`. Supported values are `debug`, `info`, `warn`, and `error`.
 - `REQUEST_LOGGING_ENABLED`: optional. Defaults to enabled. Set to `false` to disable structured request logs.
 
@@ -99,6 +100,14 @@ Archiving is a soft delete. `POST /cards/:cardId/archive` changes the card statu
 `archived` and sets `archived_at`; no API route permanently deletes a card. The
 cleanup migration also removes the old owner DELETE policy and revokes direct
 DELETE permission from Supabase's `anon` and `authenticated` roles.
+
+Use the backend diagnostics script to check database connectivity, the scheduled
+cleanup job, recent cleanup runs, and the durable deletion log:
+
+```sh
+npm run backend:diagnostics
+npm run backend:diagnostics -- --json
+```
 
 Supabase Cron runs `purge-archived-convention-cards-daily` every day at 03:15 UTC.
 Each run permanently deletes at most 500 cards that have remained archived for

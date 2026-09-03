@@ -10,6 +10,28 @@ const createShareLinkSchema = z.object({
   expiresAt: z.string().datetime().optional(),
 });
 
+const listShareLinksQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+});
+
+function parseListShareLinksQuery(context: Parameters<typeof jsonError>[0]): { ok: true; limit?: number } | { ok: false; response: Response } {
+  const result = listShareLinksQuerySchema.safeParse({
+    limit: context.req.query("limit"),
+  });
+
+  if (!result.success) {
+    return {
+      ok: false,
+      response: jsonError(context, 422, "VALIDATION_ERROR", result.error.issues[0]?.message ?? "Invalid query."),
+    };
+  }
+
+  return {
+    ok: true,
+    limit: result.data.limit,
+  };
+}
+
 function sharingErrorResponse(context: Parameters<typeof jsonError>[0], error: string, message?: string): Response {
   if (error === "CARD_NOT_FOUND" || error === "SHARE_LINK_NOT_FOUND") {
     return jsonError(context, 404, error, message ?? "Share link was not found.");
@@ -71,7 +93,12 @@ export function createShareLinkRoutes(services: ApiServices): Hono<ApiBindings> 
   routes.use("*", requireAuth);
 
   routes.get("/:cardId/share-links", async (context) => {
-    const result = await services.sharing.listShareLinks(context.req.param("cardId"), context.get("player").id);
+    const query = parseListShareLinksQuery(context);
+    if (!query.ok) {
+      return query.response;
+    }
+
+    const result = await services.sharing.listShareLinks(context.req.param("cardId"), context.get("player").id, query.limit);
 
     if (!result.ok) {
       return sharingErrorResponse(context, result.error, result.message);

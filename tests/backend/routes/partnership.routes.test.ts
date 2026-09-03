@@ -194,14 +194,38 @@ describe("partnership routes", () => {
       wbfVerification: createWbfVerificationService(),
     });
 
-    const response = await app.request("/partnerships", {
+    const response = await app.request("/partnerships?limit=20", {
       headers: {
         authorization: "Bearer access-token",
       },
     });
 
     expect(response.status).toBe(200);
-    expect(partnerships.listMyPartnerships).toHaveBeenCalledWith(player);
+    expect(partnerships.listMyPartnerships).toHaveBeenCalledWith(player, 20);
+  });
+
+  it("rejects out-of-range partnership list limits", async () => {
+    const partnerships = createPartnershipService();
+    const player = buildPlayer();
+    const app = createApp({
+      auth: createAuthService(player),
+      authProvider: createAuthProvider(),
+      cards: createCardService(),
+      partnerships,
+      playerProfiles: createPlayerProfileService(),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/partnerships?limit=101", {
+      headers: {
+        authorization: "Bearer access-token",
+      },
+    });
+
+    expect(response.status).toBe(422);
+    expect(partnerships.listMyPartnerships).not.toHaveBeenCalled();
   });
 
   it("gets a partnership for the signed-in participant", async () => {

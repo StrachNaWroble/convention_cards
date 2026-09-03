@@ -17,7 +17,7 @@ export type PartnershipServiceError =
 
 export type PartnershipService = {
   createPartnership(input: CreatePartnershipInput): Promise<Result<Partnership, PartnershipServiceError>>;
-  listMyPartnerships(player: Player): Promise<Result<Partnership[], PartnershipServiceError>>;
+  listMyPartnerships(player: Player, limit?: number): Promise<Result<Partnership[], PartnershipServiceError>>;
   getMyPartnership(partnershipId: string, player: Player): Promise<Result<Partnership, PartnershipServiceError>>;
   approvePartnership(partnershipId: string, player: Player): Promise<Result<Partnership, PartnershipServiceError>>;
   declinePartnership(partnershipId: string, player: Player): Promise<Result<Partnership, PartnershipServiceError>>;
@@ -84,8 +84,8 @@ export function createPartnershipService({
       }
     },
 
-    async listMyPartnerships(player) {
-      return ok(await partnerships.listForPlayer(player.id, player.wbfNumber));
+    async listMyPartnerships(player, limit) {
+      return ok(await partnerships.listForPlayer(player.id, player.wbfNumber, limit));
     },
 
     async getMyPartnership(partnershipId, player) {

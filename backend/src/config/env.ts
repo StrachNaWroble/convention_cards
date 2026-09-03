@@ -14,6 +14,7 @@ export type AppEnv = {
   authRateLimitMax: number;
   passwordResetRateLimitMax: number;
   wbfVerificationRateLimitMax: number;
+  maxRequestBodyBytes: number;
   logLevel: LogLevel;
   requestLoggingEnabled: boolean;
 };
@@ -74,6 +75,7 @@ export function loadAppEnv(source: EnvSource = process.env): AppEnv {
     authRateLimitMax: optionalPositiveInteger(source, "AUTH_RATE_LIMIT_MAX", 20),
     passwordResetRateLimitMax: optionalPositiveInteger(source, "PASSWORD_RESET_RATE_LIMIT_MAX", 5),
     wbfVerificationRateLimitMax: optionalPositiveInteger(source, "WBF_VERIFICATION_RATE_LIMIT_MAX", 30),
+    maxRequestBodyBytes: optionalPositiveInteger(source, "MAX_REQUEST_BODY_BYTES", 1_000_000),
     logLevel: optionalLogLevel(source, "LOG_LEVEL", "info"),
     requestLoggingEnabled: source.REQUEST_LOGGING_ENABLED !== "false",
   };

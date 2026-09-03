@@ -68,6 +68,7 @@ describe("environment config", () => {
 
   it("loads observability defaults", () => {
     expect(loadAppEnv(buildEnv())).toMatchObject({
+      maxRequestBodyBytes: 1_000_000,
       logLevel: "info",
       requestLoggingEnabled: true,
     });
@@ -78,11 +79,13 @@ describe("environment config", () => {
       loadAppEnv(
         buildEnv({
           LOG_LEVEL: "warn",
+          MAX_REQUEST_BODY_BYTES: "2048",
           REQUEST_LOGGING_ENABLED: "false",
         }),
       ),
     ).toMatchObject({
       logLevel: "warn",
+      maxRequestBodyBytes: 2048,
       requestLoggingEnabled: false,
     });
   });
@@ -90,6 +93,12 @@ describe("environment config", () => {
   it("rejects invalid log levels", () => {
     expect(() => loadAppEnv(buildEnv({ LOG_LEVEL: "verbose" }))).toThrow(
       "Environment variable LOG_LEVEL must be one of: debug, info, warn, error.",
+    );
+  });
+
+  it("rejects invalid request body size config", () => {
+    expect(() => loadAppEnv(buildEnv({ MAX_REQUEST_BODY_BYTES: "-1" }))).toThrow(
+      "Environment variable MAX_REQUEST_BODY_BYTES must be a positive integer.",
     );
   });
 });

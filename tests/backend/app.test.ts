@@ -381,3 +381,32 @@ describe("app request logging", () => {
     });
   });
 });
+
+describe("app request hardening", () => {
+  it("rejects oversized request bodies with a JSON error", async () => {
+    const auth = createAuthService();
+    const app = createApp(createTestServices({ auth }), {
+      maxRequestBodyBytes: 20,
+    });
+
+    const response = await app.request("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({
+        wbfNumber: "123456",
+        password: "password-that-is-too-large-for-this-test",
+      }),
+      headers: {
+        "content-type": "application/json",
+      },
+    });
+
+    expect(response.status).toBe(413);
+    expect(await response.json()).toEqual({
+      error: {
+        code: "PAYLOAD_TOO_LARGE",
+        message: "Request body is too large.",
+      },
+    });
+    expect(auth.loginWithWbfNumber).not.toHaveBeenCalled();
+  });
+});

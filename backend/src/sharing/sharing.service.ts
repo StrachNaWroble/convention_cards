@@ -20,7 +20,7 @@ export type SharingService = {
     ownerPlayerId: string;
     expiresAt?: Date | null;
   }): Promise<Result<CreateShareLinkResult, SharingServiceError>>;
-  listShareLinks(cardId: string, ownerPlayerId: string): Promise<Result<PublicShareLink[], SharingServiceError>>;
+  listShareLinks(cardId: string, ownerPlayerId: string, limit?: number): Promise<Result<PublicShareLink[], SharingServiceError>>;
   revokeShareLink(shareLinkId: string, ownerPlayerId: string): Promise<Result<PublicShareLink, SharingServiceError>>;
   getPublicSharedCard(token: string): Promise<Result<PublicSharedCard, SharingServiceError>>;
 };
@@ -102,14 +102,14 @@ export function createSharingService({
       }
     },
 
-    async listShareLinks(cardId, ownerPlayerId) {
+    async listShareLinks(cardId, ownerPlayerId, limit) {
       const card = await cards.findOwnedCard(cardId, ownerPlayerId);
 
       if (!card) {
         return err("CARD_NOT_FOUND");
       }
 
-      return ok((await sharing.listForCard(cardId)).map(toPublicShareLink));
+      return ok((await sharing.listForCard(cardId, limit)).map(toPublicShareLink));
     },
 
     async revokeShareLink(shareLinkId, ownerPlayerId) {
