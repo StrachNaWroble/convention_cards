@@ -17,6 +17,7 @@ Create a Supabase project and copy these values into `.env`:
 - `AUTH_RATE_LIMIT_MAX`: optional. Defaults to `20` requests per window for register/login.
 - `PASSWORD_RESET_RATE_LIMIT_MAX`: optional. Defaults to `5` requests per window.
 - `WBF_VERIFICATION_RATE_LIMIT_MAX`: optional. Defaults to `30` requests per window.
+- `MAX_REQUEST_BODY_BYTES`: optional. Defaults to `1000000` bytes.
 - `LOG_LEVEL`: optional. Defaults to `info`. Supported values are `debug`, `info`, `warn`, and `error`.
 - `REQUEST_LOGGING_ENABLED`: optional. Defaults to enabled. Set to `false` to disable structured request logs.
 

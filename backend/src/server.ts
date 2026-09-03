@@ -91,6 +91,7 @@ const app = createApp({
 }, {
   cors: env.cors,
   logger,
+  maxRequestBodyBytes: env.maxRequestBodyBytes,
   requestLogging: env.requestLoggingEnabled,
 });
 const port = Number(process.env.PORT ?? "3000");

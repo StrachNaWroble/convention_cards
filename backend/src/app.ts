@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
 import { cors } from "hono/cors";
 
 import type { AppCorsConfig } from "./config/cors.js";
@@ -16,6 +17,7 @@ import type { ApiBindings, ApiServices } from "./routes/index.js";
 export type AppOptions = {
   cors?: AppCorsConfig;
   logger?: AppLogger;
+  maxRequestBodyBytes?: number;
   requestLogging?: boolean;
 };
 
@@ -39,10 +41,29 @@ export function createApp(services: ApiServices, options: AppOptions = {}): Hono
   const app = new Hono<ApiBindings>();
   const corsConfig = options.cors ?? defaultCorsConfig;
   const logger = options.logger ?? consoleLogger;
+  const maxRequestBodyBytes = options.maxRequestBodyBytes ?? 1_000_000;
 
   if (options.requestLogging === true) {
     app.use("*", createRequestLoggingMiddleware({ logger }));
   }
+
+  app.use(
+    "*",
+    bodyLimit({
+      maxSize: maxRequestBodyBytes,
+      onError: (context) => {
+        return context.json(
+          {
+            error: {
+              code: "PAYLOAD_TOO_LARGE",
+              message: "Request body is too large.",
+            },
+          },
+          413,
+        );
+      },
+    }),
+  );
 
   app.use(
     "*",
