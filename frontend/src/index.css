@@ -45,3 +45,68 @@
     transform: translateY(0);
   }
 }
+
+/* Print styles for convention card PDF export */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 5mm;
+  }
+
+  /* Hide everything except print pages */
+  body * {
+    visibility: hidden;
+  }
+
+  .print-page,
+  .print-page * {
+    visibility: visible !important;
+  }
+
+  .print-page {
+    position: relative;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: auto !important;
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 4mm !important;
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .print-page:last-of-type {
+    page-break-after: avoid;
+  }
+
+  /* Hide non-print UI elements */
+  .no-print,
+  [class*="sticky"],
+  button {
+    display: none !important;
+  }
+
+  /* Make inputs look like filled text for print */
+  .print-page input,
+  .print-page textarea {
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Preserve background colors */
+  .print-page .bg-gray-100 {
+    background-color: #f3f4f6 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .print-page .bg-gray-200 {
+    background-color: #e5e7eb !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
