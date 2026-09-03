@@ -8,6 +8,7 @@ import { loadAppEnv } from "./config/env.js";
 import { createDatabaseClient } from "./db/index.js";
 import { createDrizzleCardRepository } from "./cards/card.repository.js";
 import { createApp } from "./app.js";
+import { createCardExportService } from "./exports/index.js";
 import { createDrizzlePartnershipRepository, createPartnershipService } from "./partnerships/index.js";
 import { createPlayerProfileService } from "./players/playerProfile.service.js";
 import { createDrizzlePlayerRepository } from "./players/player.repository.js";
@@ -24,6 +25,7 @@ const cardRepository = createDrizzleCardRepository(database.db);
 const partnershipRepository = createDrizzlePartnershipRepository(database.db);
 const sharingRepository = createDrizzleSharingRepository(database.db);
 const templateRepository = createDrizzleTemplateRepository(database.db);
+const cardValidation = createCardValidationService();
 const auth = createAuthService({
   players: playerRepository,
   authProvider,
@@ -34,7 +36,11 @@ const auth = createAuthService({
 const cards = createCardService({
   cards: cardRepository,
   partnerships: partnershipRepository,
-  validation: createCardValidationService(),
+  validation: cardValidation,
+});
+const cardExports = createCardExportService({
+  cards,
+  validation: cardValidation,
 });
 const partnerships = createPartnershipService({
   partnerships: partnershipRepository,
@@ -53,6 +59,7 @@ const app = createApp({
   auth,
   authProvider,
   cards,
+  exports: cardExports,
   partnerships,
   playerProfiles,
   sharing,

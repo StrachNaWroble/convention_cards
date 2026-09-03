@@ -53,6 +53,7 @@ Authorization: Bearer <access-token>
 - `POST /cards/:cardId/review/approve`: approve a submitted card as the invited partner.
 - `POST /cards/:cardId/review/reject`: reject a submitted card as the invited partner.
 - `POST /cards/:cardId/activate`: activate a partner-approved card after validation.
+- `GET /cards/:cardId/export`: return a print/PDF-ready JSON export payload for an active owned card.
 - `POST /cards/:cardId/archive`: archive a card.
 - `GET /cards/:cardId/share-links`: list share links for an owned card.
 - `POST /cards/:cardId/share-links`: create a public read-only share link for an active card.
