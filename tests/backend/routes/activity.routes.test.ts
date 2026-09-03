@@ -167,7 +167,13 @@ describe("activity routes", () => {
     });
 
     expect(response.status).toBe(200);
-    expect(activity.listMyEvents).toHaveBeenCalledWith("player-1", 10);
+    expect(activity.listMyEvents).toHaveBeenCalledWith("player-1", 10, {
+      cardId: undefined,
+      entityTypes: undefined,
+      eventTypes: undefined,
+      partnershipId: undefined,
+      shareLinkId: undefined,
+    });
     expect(await response.json()).toMatchObject({
       data: {
         events: [
@@ -179,6 +185,41 @@ describe("activity routes", () => {
         ],
       },
     });
+  });
+
+  it("passes activity filters to the service", async () => {
+    const { activity, app } = createTestApp();
+
+    const response = await app.request(
+      "/activity?limit=20&eventType=card.created,card.updated&entityType=card&cardId=card-1",
+      {
+        headers: {
+          authorization: "Bearer access-token",
+        },
+      },
+    );
+
+    expect(response.status).toBe(200);
+    expect(activity.listMyEvents).toHaveBeenCalledWith("player-1", 20, {
+      cardId: "card-1",
+      entityTypes: ["card"],
+      eventTypes: ["card.created", "card.updated"],
+      partnershipId: undefined,
+      shareLinkId: undefined,
+    });
+  });
+
+  it("rejects unsupported activity filters", async () => {
+    const { activity, app } = createTestApp();
+
+    const response = await app.request("/activity?eventType=card.deleted", {
+      headers: {
+        authorization: "Bearer access-token",
+      },
+    });
+
+    expect(response.status).toBe(422);
+    expect(activity.listMyEvents).not.toHaveBeenCalled();
   });
 
   it("requires authentication for activity", async () => {

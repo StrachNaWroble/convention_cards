@@ -47,3 +47,11 @@ export type CreateActivityEventInput = {
   metadata?: ActivityEventMetadata;
   createdAt?: Date;
 };
+
+export type ActivityListFilters = {
+  eventTypes?: ActivityEventType[];
+  entityTypes?: ActivityEntityType[];
+  cardId?: string;
+  partnershipId?: string;
+  shareLinkId?: string;
+};
