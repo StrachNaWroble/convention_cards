@@ -20,6 +20,7 @@ const cardStatusSchema = z.enum([
 
 const listCardsQuerySchema = z.object({
   includeArchived: z.enum(["true", "false"]).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
 });
 
 const createCardSchema = z.object({
@@ -72,9 +73,10 @@ function parseCardStatuses(value: string | undefined): { ok: true; statuses?: Ca
 
 function parseListCardsQuery(
   context: Parameters<typeof jsonError>[0],
-): { ok: true; includeArchived: boolean; statuses?: CardStatus[] } | { ok: false; response: Response } {
+): { ok: true; includeArchived: boolean; limit?: number; statuses?: CardStatus[] } | { ok: false; response: Response } {
   const result = listCardsQuerySchema.safeParse({
     includeArchived: context.req.query("includeArchived"),
+    limit: context.req.query("limit"),
   });
 
   if (!result.success) {
@@ -96,6 +98,7 @@ function parseListCardsQuery(
   return {
     ok: true,
     includeArchived: result.data.includeArchived === "true",
+    limit: result.data.limit,
     statuses: statusResult.statuses,
   };
 }
@@ -189,6 +192,7 @@ export function createCardRoutes(services: ApiServices): Hono<ApiBindings> {
     const result = await services.cards.listMyCards(player.id, {
       statuses: query.statuses,
       includeArchived: query.includeArchived,
+      limit: query.limit,
     });
 
     if (!result.ok) {

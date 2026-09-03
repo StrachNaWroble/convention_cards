@@ -6,7 +6,7 @@ import type { CreatePartnershipRecordInput, Partnership, PartnershipStatus } fro
 
 export type PartnershipRepository = {
   create(input: CreatePartnershipRecordInput): Promise<Partnership>;
-  listForPlayer(playerId: string, wbfNumber: string): Promise<Partnership[]>;
+  listForPlayer(playerId: string, wbfNumber: string, limit?: number): Promise<Partnership[]>;
   findById(partnershipId: string): Promise<Partnership | null>;
   findForParticipant(partnershipId: string, playerId: string, wbfNumber: string): Promise<Partnership | null>;
   updateStatus(
@@ -33,8 +33,8 @@ export function createDrizzlePartnershipRepository(db: Database): PartnershipRep
       return partnership;
     },
 
-    async listForPlayer(playerId, wbfNumber) {
-      return db
+    async listForPlayer(playerId, wbfNumber, limit) {
+      const query = db
         .select()
         .from(partnerships)
         .where(
@@ -45,6 +45,12 @@ export function createDrizzlePartnershipRepository(db: Database): PartnershipRep
           ),
         )
         .orderBy(desc(partnerships.updatedAt));
+
+      if (limit) {
+        return query.limit(limit);
+      }
+
+      return query;
     },
 
     async findById(partnershipId) {

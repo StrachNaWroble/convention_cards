@@ -7,7 +7,7 @@ import type { CreateShareLinkInput, PublicSharedCard, ShareLink } from "./sharin
 
 export type SharingRepository = {
   create(input: CreateShareLinkInput): Promise<ShareLink>;
-  listForCard(cardId: string): Promise<ShareLink[]>;
+  listForCard(cardId: string, limit?: number): Promise<ShareLink[]>;
   findByIdForOwnedCard(shareLinkId: string, ownerPlayerId: string): Promise<ShareLink | null>;
   revoke(shareLinkId: string, revokedAt: Date): Promise<ShareLink | null>;
   findPublicSharedCardByTokenHash(tokenHash: string, now: Date): Promise<PublicSharedCard | null>;
@@ -28,8 +28,14 @@ export function createDrizzleSharingRepository(db: Database): SharingRepository 
       return link;
     },
 
-    async listForCard(cardId) {
-      return db.select().from(shareLinks).where(eq(shareLinks.cardId, cardId));
+    async listForCard(cardId, limit) {
+      const query = db.select().from(shareLinks).where(eq(shareLinks.cardId, cardId));
+
+      if (limit) {
+        return query.limit(limit);
+      }
+
+      return query;
     },
 
     async findByIdForOwnedCard(shareLinkId, ownerPlayerId) {

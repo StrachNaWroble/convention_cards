@@ -85,11 +85,17 @@ export function createDrizzleCardRepository(db: Database): CardRepository {
         conditions.push(ne(conventionCards.status, "archived"));
       }
 
-      return db
+      const query = db
         .select()
         .from(conventionCards)
         .where(and(...conditions))
         .orderBy(desc(conventionCards.updatedAt));
+
+      if (filters.limit) {
+        return query.limit(filters.limit);
+      }
+
+      return query;
     },
 
     async listPendingReviewForPartner(playerId, wbfNumber) {

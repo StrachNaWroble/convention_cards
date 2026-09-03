@@ -251,6 +251,7 @@ describe("card routes", () => {
     expect(response.status).toBe(200);
     expect(cards.listMyCards).toHaveBeenCalledWith("player-1", {
       includeArchived: false,
+      limit: undefined,
       statuses: undefined,
     });
   });
@@ -268,7 +269,7 @@ describe("card routes", () => {
       wbfVerification: createWbfVerificationService(),
     });
 
-    const response = await app.request("/cards?status=draft,active&includeArchived=true", {
+    const response = await app.request("/cards?status=draft,active&includeArchived=true&limit=25", {
       headers: {
         authorization: "Bearer access-token",
       },
@@ -277,6 +278,7 @@ describe("card routes", () => {
     expect(response.status).toBe(200);
     expect(cards.listMyCards).toHaveBeenCalledWith("player-1", {
       includeArchived: true,
+      limit: 25,
       statuses: ["draft", "active"],
     });
   });
@@ -295,6 +297,29 @@ describe("card routes", () => {
     });
 
     const response = await app.request("/cards?status=deleted", {
+      headers: {
+        authorization: "Bearer access-token",
+      },
+    });
+
+    expect(response.status).toBe(422);
+    expect(cards.listMyCards).not.toHaveBeenCalled();
+  });
+
+  it("rejects out-of-range card list limits", async () => {
+    const cards = createCardService();
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards,
+      partnerships: createPartnershipService(),
+      playerProfiles: createPlayerProfileService(),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/cards?limit=101", {
       headers: {
         authorization: "Bearer access-token",
       },
@@ -786,14 +811,37 @@ describe("card routes", () => {
       wbfVerification: createWbfVerificationService(),
     });
 
-    const response = await app.request("/cards/card-1/share-links", {
+    const response = await app.request("/cards/card-1/share-links?limit=10", {
       headers: {
         authorization: "Bearer access-token",
       },
     });
 
     expect(response.status).toBe(200);
-    expect(sharing.listShareLinks).toHaveBeenCalledWith("card-1", "player-1");
+    expect(sharing.listShareLinks).toHaveBeenCalledWith("card-1", "player-1", 10);
+  });
+
+  it("rejects out-of-range share-link list limits", async () => {
+    const sharing = createSharingService();
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards: createCardService(),
+      partnerships: createPartnershipService(),
+      playerProfiles: createPlayerProfileService(),
+      sharing,
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/cards/card-1/share-links?limit=0", {
+      headers: {
+        authorization: "Bearer access-token",
+      },
+    });
+
+    expect(response.status).toBe(422);
+    expect(sharing.listShareLinks).not.toHaveBeenCalled();
   });
 
   it("does not expose a user-facing hard-delete route", async () => {

@@ -48,4 +48,5 @@ export type UpdateCardDraftInput = {
 export type CardListFilters = {
   statuses?: CardStatus[];
   includeArchived?: boolean;
+  limit?: number;
 };

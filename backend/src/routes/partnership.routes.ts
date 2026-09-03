@@ -10,6 +10,28 @@ const createPartnershipSchema = z.object({
   partnerWbfNumber: z.string().min(1, "Partner WBF number is required."),
 });
 
+const listPartnershipsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+});
+
+function parseListPartnershipsQuery(context: Parameters<typeof jsonError>[0]): { ok: true; limit?: number } | { ok: false; response: Response } {
+  const result = listPartnershipsQuerySchema.safeParse({
+    limit: context.req.query("limit"),
+  });
+
+  if (!result.success) {
+    return {
+      ok: false,
+      response: jsonError(context, 422, "VALIDATION_ERROR", result.error.issues[0]?.message ?? "Invalid query."),
+    };
+  }
+
+  return {
+    ok: true,
+    limit: result.data.limit,
+  };
+}
+
 function partnershipErrorResponse(context: Parameters<typeof jsonError>[0], error: string, message?: string): Response {
   if (error === "PARTNERSHIP_NOT_FOUND") {
     return jsonError(context, 404, error, "Partnership was not found.");
@@ -38,7 +60,12 @@ export function createPartnershipRoutes(services: ApiServices): Hono<ApiBindings
   routes.use("*", requireAuth);
 
   routes.get("/", async (context) => {
-    const result = await services.partnerships.listMyPartnerships(context.get("player"));
+    const query = parseListPartnershipsQuery(context);
+    if (!query.ok) {
+      return query.response;
+    }
+
+    const result = await services.partnerships.listMyPartnerships(context.get("player"), query.limit);
 
     if (!result.ok) {
       return partnershipErrorResponse(context, result.error, result.message);

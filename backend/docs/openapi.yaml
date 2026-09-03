@@ -262,6 +262,7 @@ paths:
           description: Include archived cards when no status filter is supplied.
           schema:
             type: boolean
+        - $ref: "#/components/parameters/Limit"
       responses:
         "200":
           description: Owned cards.
@@ -532,6 +533,7 @@ paths:
   /cards/{cardId}/share-links:
     parameters:
       - $ref: "#/components/parameters/CardId"
+      - $ref: "#/components/parameters/Limit"
     get:
       tags: [Sharing]
       summary: List share links for an owned card.
@@ -610,6 +612,8 @@ paths:
     get:
       tags: [Partnerships]
       summary: List partnerships for the signed-in player.
+      parameters:
+        - $ref: "#/components/parameters/Limit"
       responses:
         "200":
           description: Partnerships.
