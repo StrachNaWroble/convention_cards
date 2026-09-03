@@ -74,6 +74,7 @@ function createPartnershipService(): PartnershipService {
   return {
     createPartnership: vi.fn(),
     listMyPartnerships: vi.fn(async () => ok([])),
+    getMyPartnership: vi.fn(),
     approvePartnership: vi.fn(),
     declinePartnership: vi.fn(),
     archivePartnership: vi.fn(),

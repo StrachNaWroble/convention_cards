@@ -91,6 +91,7 @@ function createPartnershipService(partnership = buildPartnership()): Partnership
   return {
     createPartnership: vi.fn(async () => ok(partnership)),
     listMyPartnerships: vi.fn(async () => ok([partnership])),
+    getMyPartnership: vi.fn(async () => ok(partnership)),
     approvePartnership: vi.fn(async () => ok(buildPartnership({ ...partnership, status: "approved" }))),
     declinePartnership: vi.fn(async () => ok(buildPartnership({ ...partnership, status: "declined" }))),
     archivePartnership: vi.fn(async () => ok(buildPartnership({ ...partnership, status: "archived" }))),
@@ -201,6 +202,60 @@ describe("partnership routes", () => {
 
     expect(response.status).toBe(200);
     expect(partnerships.listMyPartnerships).toHaveBeenCalledWith(player);
+  });
+
+  it("gets a partnership for the signed-in participant", async () => {
+    const partnerships = createPartnershipService();
+    const player = buildPlayer();
+    const app = createApp({
+      auth: createAuthService(player),
+      authProvider: createAuthProvider(),
+      cards: createCardService(),
+      partnerships,
+      playerProfiles: createPlayerProfileService(),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/partnerships/partnership-1", {
+      headers: {
+        authorization: "Bearer access-token",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(partnerships.getMyPartnership).toHaveBeenCalledWith("partnership-1", player);
+    expect(await response.json()).toMatchObject({
+      data: {
+        id: "partnership-1",
+        ownerPlayerId: "player-1",
+        partnerWbfNumber: "654321",
+      },
+    });
+  });
+
+  it("maps inaccessible partnership details to not found", async () => {
+    const partnerships = createPartnershipService();
+    vi.mocked(partnerships.getMyPartnership).mockResolvedValueOnce(err("PARTNERSHIP_NOT_FOUND"));
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards: createCardService(),
+      partnerships,
+      playerProfiles: createPlayerProfileService(),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/partnerships/partnership-1", {
+      headers: {
+        authorization: "Bearer access-token",
+      },
+    });
+
+    expect(response.status).toBe(404);
   });
 
   it("approves a pending partnership", async () => {

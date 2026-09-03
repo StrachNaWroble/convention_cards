@@ -214,6 +214,33 @@ describe("partnership service", () => {
     expect(result.data.approvedAt).toEqual(approvedAt);
   });
 
+  it("gets a partnership for a participant only", async () => {
+    const owner = buildPlayer();
+    const service = createPartnershipService({
+      partnerships: createPartnershipRepository([buildPartnership()]),
+      players: createPlayerRepository([owner]),
+    });
+
+    const result = await service.getMyPartnership("partnership-1", owner);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.data.id).toBe("partnership-1");
+  });
+
+  it("hides partnership details from non-participants", async () => {
+    const stranger = buildPlayer({ id: "player-3", wbfNumber: "999999" });
+    const service = createPartnershipService({
+      partnerships: createPartnershipRepository([buildPartnership()]),
+      players: createPlayerRepository([stranger]),
+    });
+
+    const result = await service.getMyPartnership("partnership-1", stranger);
+
+    expect(result).toEqual({ ok: false, error: "PARTNERSHIP_NOT_FOUND" });
+  });
+
   it("blocks the owner from approving their own partnership request", async () => {
     const owner = buildPlayer();
     const service = createPartnershipService({
