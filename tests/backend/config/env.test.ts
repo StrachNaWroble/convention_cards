@@ -28,48 +28,41 @@ describe("environment config", () => {
     ).toBe("https://app.example.com/reset-password");
   });
 
-  it("allows all CORS origins by default for local development", () => {
-    expect(loadAppEnv(buildEnv()).cors).toEqual({
-      allowedOrigins: ["*"],
-      allowCredentials: false,
-      maxAgeSeconds: 600,
+  it("loads rate limit defaults", () => {
+    expect(loadAppEnv(buildEnv())).toMatchObject({
+      rateLimitEnabled: true,
+      rateLimitWindowMs: 60_000,
+      authRateLimitMax: 20,
+      passwordResetRateLimitMax: 5,
+      wbfVerificationRateLimitMax: 30,
     });
   });
 
-  it("loads specific CORS origins", () => {
+  it("allows rate limiting to be disabled", () => {
+    expect(loadAppEnv(buildEnv({ RATE_LIMIT_ENABLED: "false" })).rateLimitEnabled).toBe(false);
+  });
+
+  it("loads custom rate limit values", () => {
     expect(
       loadAppEnv(
         buildEnv({
-          CORS_ALLOWED_ORIGINS: "http://localhost:5173, https://app.example.com",
-          CORS_ALLOW_CREDENTIALS: "true",
-          CORS_MAX_AGE_SECONDS: "300",
+          RATE_LIMIT_WINDOW_MS: "30000",
+          AUTH_RATE_LIMIT_MAX: "8",
+          PASSWORD_RESET_RATE_LIMIT_MAX: "3",
+          WBF_VERIFICATION_RATE_LIMIT_MAX: "12",
         }),
-      ).cors,
-    ).toEqual({
-      allowedOrigins: ["http://localhost:5173", "https://app.example.com"],
-      allowCredentials: true,
-      maxAgeSeconds: 300,
+      ),
+    ).toMatchObject({
+      rateLimitWindowMs: 30_000,
+      authRateLimitMax: 8,
+      passwordResetRateLimitMax: 3,
+      wbfVerificationRateLimitMax: 12,
     });
   });
 
-  it("rejects wildcard CORS origins when credentials are allowed", () => {
-    expect(() =>
-      loadAppEnv(
-        buildEnv({
-          CORS_ALLOWED_ORIGINS: "*",
-          CORS_ALLOW_CREDENTIALS: "true",
-        }),
-      ),
-    ).toThrow("CORS_ALLOW_CREDENTIALS cannot be true when CORS_ALLOWED_ORIGINS is '*'.");
-  });
-
-  it("rejects invalid CORS origins", () => {
-    expect(() =>
-      loadAppEnv(
-        buildEnv({
-          CORS_ALLOWED_ORIGINS: "https://app.example.com/path",
-        }),
-      ),
-    ).toThrow("CORS_ALLOWED_ORIGINS contains an invalid origin: https://app.example.com/path");
+  it("rejects invalid rate limit values", () => {
+    expect(() => loadAppEnv(buildEnv({ AUTH_RATE_LIMIT_MAX: "0" }))).toThrow(
+      "Environment variable AUTH_RATE_LIMIT_MAX must be a positive integer.",
+    );
   });
 });
