@@ -21,6 +21,7 @@ export type AuthServiceError =
 export type AuthService = {
   registerPlayerAccount(input: RegisterPlayerInput): Promise<Result<RegisterPlayerResult, AuthServiceError>>;
   loginWithWbfNumber(input: LoginWithWbfNumberInput): Promise<Result<LoginWithWbfNumberResult, AuthServiceError>>;
+  refreshSession(refreshToken: string): Promise<Result<LoginWithWbfNumberResult, AuthServiceError | "PLAYER_NOT_FOUND">>;
   getCurrentPlayer(authUserId: string): Promise<Result<LoginWithWbfNumberResult["player"], "PLAYER_NOT_FOUND">>;
 };
 
@@ -97,6 +98,25 @@ export function createAuthService({
       await players.markLogin(player.authUserId, now());
 
       return ok({ player, session: session.data });
+    },
+
+    async refreshSession(refreshToken) {
+      const sessionResult = await authProvider.refreshSession(refreshToken);
+      if (!sessionResult.ok) {
+        return err("AUTH_PROVIDER_ERROR");
+      }
+
+      const userResult = await authProvider.getUserByAccessToken(sessionResult.data.accessToken);
+      if (!userResult.ok) {
+        return err("AUTH_PROVIDER_ERROR");
+      }
+
+      const player = await players.findByAuthUserId(userResult.data.id);
+      if (!player) {
+        return err("PLAYER_NOT_FOUND");
+      }
+
+      return ok({ player, session: sessionResult.data });
     },
 
     async getCurrentPlayer(authUserId) {

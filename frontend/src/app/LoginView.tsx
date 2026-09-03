@@ -22,10 +22,12 @@ export const LoginView: React.FC<LoginViewProps> = ({ onNavigateToRegister, onLo
       if (result.session?.accessToken) {
         if (rememberMe) {
           localStorage.setItem('token', result.session.accessToken);
+          localStorage.setItem('refreshToken', result.session.refreshToken);
           sessionStorage.removeItem('token');
         } else {
           sessionStorage.setItem('token', result.session.accessToken);
           localStorage.removeItem('token');
+          localStorage.removeItem('refreshToken');
         }
       }
       if (onLoginSuccess) {

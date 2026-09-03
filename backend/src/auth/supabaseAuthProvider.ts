@@ -93,6 +93,20 @@ export function createSupabaseAuthProvider(config: SupabaseConfig): AuthProvider
       });
     },
 
+    async refreshSession(refreshToken) {
+      const { data, error } = await publicClient.auth.refreshSession({ refresh_token: refreshToken });
+
+      if (error || !data.session?.access_token) {
+        return err("AUTH_REFRESH_FAILED", error?.message || "Invalid refresh token.");
+      }
+
+      return ok({
+        accessToken: data.session.access_token,
+        refreshToken: data.session.refresh_token,
+        expiresAt: data.session.expires_at,
+      });
+    },
+
     async signOut(accessToken) {
       if (accessToken && adminClient) {
         const { error } = await adminClient.auth.admin.signOut(accessToken);

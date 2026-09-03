@@ -19,7 +19,24 @@ export const App: React.FC = () => {
         } catch (error) {
           console.error("Session validation failed", error);
           if (error instanceof ApiError && error.status === 401) {
+            // Try to refresh the token if rememberMe is enabled
+            const refreshToken = localStorage.getItem('refreshToken');
+            if (refreshToken) {
+              try {
+                const refreshResult = await authApi.refresh(refreshToken);
+                if (refreshResult.session?.accessToken) {
+                  localStorage.setItem('token', refreshResult.session.accessToken);
+                  localStorage.setItem('refreshToken', refreshResult.session.refreshToken);
+                  setView('dashboard');
+                  setIsInitializing(false);
+                  return;
+                }
+              } catch (refreshError) {
+                console.error("Token refresh failed", refreshError);
+              }
+            }
             localStorage.removeItem('token');
+            localStorage.removeItem('refreshToken');
             sessionStorage.removeItem('token');
           }
         }

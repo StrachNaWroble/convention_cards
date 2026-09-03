@@ -60,6 +60,6 @@ export const cardsApi = {
    * Archiwizuje kartę konwencyjną (logiczne usunięcie z bazy)
    */
   archiveCard: async (cardId: string): Promise<ConventionCard> => {
-    return api.post<ConventionCard>(`/cards/${cardId}/archive`);
+    return api.post<ConventionCard>(`/cards/${cardId}/archive`, {});
   }
 };

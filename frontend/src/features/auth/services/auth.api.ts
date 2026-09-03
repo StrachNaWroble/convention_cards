@@ -50,10 +50,18 @@ export const authApi = {
   },
 
   /**
+   * Odświeża sesję za pomocą refreshTokena
+   */
+  refresh: async (refreshToken: string): Promise<LoginResponse> => {
+    return api.post<LoginResponse>('/auth/refresh', { refreshToken });
+  },
+
+  /**
    * Wylogowuje użytkownika
    */
   logout: async (): Promise<{ signedOut: boolean }> => {
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     sessionStorage.removeItem('token');
     return api.post<{ signedOut: boolean }>('/auth/logout', {});
   },

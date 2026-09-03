@@ -21,6 +21,7 @@ export type AuthProvider = {
   registerWithEmailPassword(email: string, password: string): Promise<Result<RegisteredAuthUser, AuthProviderError>>;
   signInWithEmailPassword(email: string, password: string): Promise<Result<AuthSession, AuthProviderError>>;
   getUserByAccessToken(accessToken: string): Promise<Result<CurrentAuthUser, AuthProviderError>>;
+  refreshSession(refreshToken: string): Promise<Result<AuthSession, AuthProviderError>>;
   signOut(accessToken?: string): Promise<Result<void, AuthProviderError>>;
 };
 
@@ -30,6 +31,7 @@ export type AuthProviderError =
   | "AUTH_REGISTRATION_FAILED"
   | "AUTH_SIGN_IN_FAILED"
   | "AUTH_SESSION_INVALID"
+  | "AUTH_REFRESH_FAILED"
   | "AUTH_SIGN_OUT_FAILED";
 
 export type RegisterPlayerInput = {

@@ -66,6 +66,17 @@ export function createAuthRoutes(services: ApiServices): Hono<ApiBindings> {
     return jsonOk(context, result.data);
   });
 
+  routes.post("/refresh", async (context) => {
+    const body = await parseJsonBody(context, z.object({ refreshToken: z.string().min(1) }));
+    if (!body.ok) return body.response;
+
+    const result = await services.auth.refreshSession(body.data.refreshToken);
+    if (!result.ok) {
+      return jsonError(context, 401, result.error, "Could not refresh session.");
+    }
+    return jsonOk(context, result.data);
+  });
+
   routes.post("/logout", createAuthMiddleware(services), async (context) => {
     const result = await services.authProvider.signOut(context.get("accessToken"));
 

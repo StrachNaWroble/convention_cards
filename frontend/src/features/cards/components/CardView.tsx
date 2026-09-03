@@ -118,10 +118,11 @@ export const CardView: React.FC<CardViewProps> = ({ cardId, onBack, onEdit, onPr
         </div>
       </div>
 
-      {/* Card title — hidden on print (already in convention card header) */}
-      <p className="no-print text-gray-400 text-xs text-right">
-        {card.title} · Last updated: {new Date(card.updatedAt).toLocaleDateString()}
-      </p>
+      {/* Card title and meta — hidden on print */}
+      <div className="no-print text-center mb-6">
+        <h2 className="text-3xl font-bold text-white mb-2 tracking-tight">{card.title || 'Untitled Card'}</h2>
+        <p className="text-gray-400 text-sm">Last updated: {new Date(card.updatedAt).toLocaleDateString()}</p>
+      </div>
 
       {/* Print container — same structure as CardEditor so same print CSS applies */}
       <div className="print-container flex flex-col items-center gap-6">
