@@ -77,6 +77,8 @@ const app = createApp({
   sharing,
   templates,
   wbfVerification: createWbfPeopleFinderService(),
+}, {
+  cors: env.cors,
 });
 const port = Number(process.env.PORT ?? "3000");
 

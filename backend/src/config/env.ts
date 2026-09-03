@@ -1,3 +1,5 @@
+import { loadCorsConfig, type AppCorsConfig } from "./cors.js";
+
 export type AppEnv = {
   databaseUrl: string;
   supabaseUrl: string;
@@ -5,6 +7,7 @@ export type AppEnv = {
   supabaseServiceRoleKey?: string;
   requireWbfVerification: boolean;
   passwordResetRedirectTo?: string;
+  cors: AppCorsConfig;
 };
 
 type EnvSource = Record<string, string | undefined>;
@@ -27,5 +30,6 @@ export function loadAppEnv(source: EnvSource = process.env): AppEnv {
     supabaseServiceRoleKey: source.SUPABASE_SERVICE_ROLE_KEY,
     requireWbfVerification: source.REQUIRE_WBF_VERIFICATION === "true",
     passwordResetRedirectTo: source.PASSWORD_RESET_REDIRECT_TO,
+    cors: loadCorsConfig(source),
   };
 }

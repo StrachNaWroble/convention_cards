@@ -27,4 +27,49 @@ describe("environment config", () => {
         .passwordResetRedirectTo,
     ).toBe("https://app.example.com/reset-password");
   });
+
+  it("allows all CORS origins by default for local development", () => {
+    expect(loadAppEnv(buildEnv()).cors).toEqual({
+      allowedOrigins: ["*"],
+      allowCredentials: false,
+      maxAgeSeconds: 600,
+    });
+  });
+
+  it("loads specific CORS origins", () => {
+    expect(
+      loadAppEnv(
+        buildEnv({
+          CORS_ALLOWED_ORIGINS: "http://localhost:5173, https://app.example.com",
+          CORS_ALLOW_CREDENTIALS: "true",
+          CORS_MAX_AGE_SECONDS: "300",
+        }),
+      ).cors,
+    ).toEqual({
+      allowedOrigins: ["http://localhost:5173", "https://app.example.com"],
+      allowCredentials: true,
+      maxAgeSeconds: 300,
+    });
+  });
+
+  it("rejects wildcard CORS origins when credentials are allowed", () => {
+    expect(() =>
+      loadAppEnv(
+        buildEnv({
+          CORS_ALLOWED_ORIGINS: "*",
+          CORS_ALLOW_CREDENTIALS: "true",
+        }),
+      ),
+    ).toThrow("CORS_ALLOW_CREDENTIALS cannot be true when CORS_ALLOWED_ORIGINS is '*'.");
+  });
+
+  it("rejects invalid CORS origins", () => {
+    expect(() =>
+      loadAppEnv(
+        buildEnv({
+          CORS_ALLOWED_ORIGINS: "https://app.example.com/path",
+        }),
+      ),
+    ).toThrow("CORS_ALLOWED_ORIGINS contains an invalid origin: https://app.example.com/path");
+  });
 });

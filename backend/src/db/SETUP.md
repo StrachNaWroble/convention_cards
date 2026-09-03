@@ -12,6 +12,9 @@ Create a Supabase project and copy these values into `.env`:
 - `SUPABASE_SERVICE_ROLE_KEY`: private server-only key.
 - `REQUIRE_WBF_VERIFICATION`: optional. Set to `true` in stricter environments to block registration when WBF verification is unavailable.
 - `PASSWORD_RESET_REDIRECT_TO`: optional. Supabase password reset emails can redirect users to this URL.
+- `CORS_ALLOWED_ORIGINS`: optional. Comma-separated browser origins allowed to call the API. Defaults to `*` for local development.
+- `CORS_ALLOW_CREDENTIALS`: optional. Set to `true` only when using specific allowed origins.
+- `CORS_MAX_AGE_SECONDS`: optional. Browser preflight cache time. Defaults to `600`.
 
 Keep `SUPABASE_SERVICE_ROLE_KEY` out of frontend code.
 
@@ -59,3 +62,19 @@ When a player logs in, they enter WBF number and password. The server looks up t
 Backend services can use the Drizzle client with `DATABASE_URL`.
 
 Frontend code should not use the direct database URL. Browser code should call backend API routes or use Supabase client APIs that are protected by row-level security.
+
+## 5. CORS
+
+CORS controls which browser origins can read backend responses from frontend JavaScript. It does not replace authentication.
+
+For local development, leaving `CORS_ALLOWED_ORIGINS` unset allows any origin. For production, set it to the deployed frontend origin, for example:
+
+```text
+CORS_ALLOWED_ORIGINS=https://your-frontend.example.com
+```
+
+If you need both local and deployed frontends:
+
+```text
+CORS_ALLOWED_ORIGINS=http://localhost:5173,https://your-frontend.example.com
+```
