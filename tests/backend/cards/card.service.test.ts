@@ -600,4 +600,21 @@ describe("card service", () => {
       message: "Card data is required before activation.",
     });
   });
+
+  it("soft deletes a card by archiving it with a timestamp", async () => {
+    const archiveTime = new Date("2026-09-03T12:00:00.000Z");
+    const repository = createCardRepository([buildCard({ status: "active" })]);
+    const service = createCardService({
+      cards: repository,
+      now: () => archiveTime,
+    });
+
+    const result = await service.archiveCard("card-1", "player-1");
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.data.status).toBe("archived");
+    expect(result.data.archivedAt).toEqual(archiveTime);
+  });
 });

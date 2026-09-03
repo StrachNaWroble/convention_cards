@@ -4,6 +4,7 @@ import {
   integer,
   jsonb,
   pgEnum,
+  pgSchema,
   pgTable,
   text,
   timestamp,
@@ -13,6 +14,8 @@ import {
 } from "drizzle-orm/pg-core";
 
 import type { ConventionCardData } from "../cards/card.types.js";
+
+export const appPrivate = pgSchema("app_private");
 
 export const verificationStatusEnum = pgEnum("verification_status", [
   "pending",
@@ -166,5 +169,25 @@ export const activityEvents = pgTable(
     partnershipIndex: index("activity_events_partnership_id_idx").on(table.partnershipId),
     shareLinkIndex: index("activity_events_share_link_id_idx").on(table.shareLinkId),
     createdAtIndex: index("activity_events_created_at_idx").on(table.createdAt),
+  }),
+);
+
+export const conventionCardDeletionLog = appPrivate.table(
+  "convention_card_deletion_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    cleanupRunId: uuid("cleanup_run_id").notNull(),
+    cardId: uuid("card_id").notNull(),
+    ownerPlayerId: uuid("owner_player_id").notNull(),
+    archivedAt: timestamp("archived_at", { withTimezone: true }).notNull(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }).notNull().defaultNow(),
+    shareLinksDeleted: integer("share_links_deleted").notNull(),
+    activityEventsDeleted: integer("activity_events_deleted").notNull(),
+    sourceCardReferencesCleared: integer("source_card_references_cleared").notNull(),
+  },
+  (table) => ({
+    cardIndex: index("convention_card_deletion_log_card_id_idx").on(table.cardId),
+    runIndex: index("convention_card_deletion_log_cleanup_run_id_idx").on(table.cleanupRunId),
+    deletedAtIndex: index("convention_card_deletion_log_deleted_at_idx").on(table.deletedAt),
   }),
 );

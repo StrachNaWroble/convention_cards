@@ -656,4 +656,28 @@ describe("card routes", () => {
     expect(response.status).toBe(200);
     expect(sharing.listShareLinks).toHaveBeenCalledWith("card-1", "player-1");
   });
+
+  it("does not expose a user-facing hard-delete route", async () => {
+    const cards = createCardService();
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards,
+      partnerships: createPartnershipService(),
+      playerProfiles: createPlayerProfileService(),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/cards/card-1", {
+      method: "DELETE",
+      headers: {
+        authorization: "Bearer access-token",
+      },
+    });
+
+    expect(response.status).toBe(404);
+    expect(cards.archiveCard).not.toHaveBeenCalled();
+  });
 });
