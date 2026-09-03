@@ -98,6 +98,33 @@ export function createSupabaseAuthProvider(config: SupabaseConfig): AuthProvider
       });
     },
 
+    async sendPasswordResetEmail(email, redirectTo) {
+      const options = redirectTo ? { redirectTo } : undefined;
+      const { error } = await publicClient.auth.resetPasswordForEmail(email, options);
+
+      if (error) {
+        return err("AUTH_PASSWORD_RESET_FAILED", error.message);
+      }
+
+      return ok(undefined);
+    },
+
+    async updatePassword(authUserId, newPassword) {
+      if (!adminClient) {
+        return err("AUTH_PASSWORD_UPDATE_FAILED", "Supabase service role key is required to update passwords.");
+      }
+
+      const { error } = await adminClient.auth.admin.updateUserById(authUserId, {
+        password: newPassword,
+      });
+
+      if (error) {
+        return err("AUTH_PASSWORD_UPDATE_FAILED", error.message);
+      }
+
+      return ok(undefined);
+    },
+
     async getUserByAccessToken(accessToken) {
       const { data, error } = await publicClient.auth.getUser(accessToken);
 

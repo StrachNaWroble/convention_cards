@@ -21,6 +21,8 @@ export type AuthProvider = {
   registerWithEmailPassword(email: string, password: string): Promise<Result<RegisteredAuthUser, AuthProviderError>>;
   signInWithEmailPassword(email: string, password: string): Promise<Result<AuthSession, AuthProviderError>>;
   refreshSession(refreshToken: string): Promise<Result<AuthSession, AuthProviderError>>;
+  sendPasswordResetEmail(email: string, redirectTo?: string): Promise<Result<void, AuthProviderError>>;
+  updatePassword(authUserId: string, newPassword: string): Promise<Result<void, AuthProviderError>>;
   getUserByAccessToken(accessToken: string): Promise<Result<CurrentAuthUser, AuthProviderError>>;
   signOut(accessToken?: string): Promise<Result<void, AuthProviderError>>;
 };
@@ -28,6 +30,8 @@ export type AuthProvider = {
 export type AuthProviderError =
   | "AUTH_EMAIL_ALREADY_EXISTS"
   | "AUTH_INVALID_CREDENTIALS"
+  | "AUTH_PASSWORD_RESET_FAILED"
+  | "AUTH_PASSWORD_UPDATE_FAILED"
   | "AUTH_REFRESH_FAILED"
   | "AUTH_REGISTRATION_FAILED"
   | "AUTH_SIGN_IN_FAILED"
@@ -47,6 +51,17 @@ export type LoginWithWbfNumberInput = {
   password: string;
 };
 
+export type RequestPasswordResetInput = {
+  wbfNumber: string;
+};
+
+export type ChangePasswordInput = {
+  authUserId: string;
+  email: string;
+  currentPassword: string;
+  newPassword: string;
+};
+
 export type RegisterPlayerResult = {
   player: Player;
   authUser: RegisteredAuthUser;
@@ -55,4 +70,12 @@ export type RegisterPlayerResult = {
 export type LoginWithWbfNumberResult = {
   player: Player;
   session: AuthSession;
+};
+
+export type RequestPasswordResetResult = {
+  resetEmailQueued: true;
+};
+
+export type ChangePasswordResult = {
+  passwordChanged: true;
 };

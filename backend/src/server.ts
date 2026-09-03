@@ -29,6 +29,7 @@ const auth = createAuthService({
   authProvider,
   wbfVerification: createWbfPeopleFinderService(),
   requireWbfVerification: env.requireWbfVerification,
+  passwordResetRedirectTo: env.passwordResetRedirectTo,
 });
 const cards = createCardService({
   cards: cardRepository,
