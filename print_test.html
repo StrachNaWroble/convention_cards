@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>WBF Convention Card — Print Test</title>
+<style>
+  /* ─── Reset ─── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; background: #ccc; }
+
+  /* ─── Screen: show pages like A4 sheets ─── */
+  .sheet {
+    width: 297mm;
+    min-height: 210mm;
+    background: white;
+    margin: 10mm auto;
+    padding: 6mm;
+    box-shadow: 0 2px 12px rgba(0,0,0,.3);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ─── Print ─── */
+  @page {
+    size: A4 landscape;
+    margin: 6mm;
+  }
+  @media print {
+    body { background: white; }
+    .sheet {
+      width: 100%;
+      min-height: auto;
+      margin: 0;
+      padding: 0;
+      box-shadow: none;
+      page-break-after: always;
+    }
+    .sheet:last-child { page-break-after: avoid; }
+    button { display: none !important; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+
+  /* ─── Shared table styles ─── */
+  table { border-collapse: collapse; width: 100%; font-size: 9px; }
+  td, th { border: 1px solid black; }
+  .hdr { background: #e5e7eb; font-weight: bold; font-size: 8px; text-transform: uppercase; }
+  .label { background: #f3f4f6; font-weight: bold; white-space: nowrap; padding: 2px 4px; }
+  .field { height: 22px; padding: 2px 4px; }
+  .field-tall { height: 55px; padding: 2px 4px; vertical-align: top; }
+  .field-grid { height: 18px; }
+  .vert {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    text-align: center;
+    font-size: 8px;
+    font-weight: bold;
+    background: #f3f4f6;
+    padding: 2px;
+  }
+  .suit-red { color: #dc2626; }
+  .section-hdr {
+    text-align: center;
+    font-weight: bold;
+    font-size: 9px;
+    text-transform: uppercase;
+    background: #f3f4f6;
+    border: 1px solid black;
+    padding: 2px;
+  }
+
+  /* ─── PAGE 1: 3-column layout ─── */
+  .p1-grid {
+    display: flex;
+    flex: 1;
+    border: 2px solid black;
+    font-size: 9px;
+  }
+  .col { flex: 1; display: flex; flex-direction: column; border-right: 2px solid black; }
+  .col:last-child { border-right: none; }
+  .col-hdr {
+    background: #e5e7eb;
+    font-weight: bold;
+    font-size: 9px;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 3px;
+    border-bottom: 2px solid black;
+  }
+  .field-block {
+    border-bottom: 1px solid black;
+    display: flex;
+    flex-direction: column;
+  }
+  .field-block-hdr {
+    background: #f3f4f6;
+    font-size: 7.5px;
+    font-weight: bold;
+    text-transform: uppercase;
+    padding: 1px 3px;
+    border-bottom: 1px solid black;
+  }
+  .field-block-body { flex: 1; min-height: 42px; }
+  .grow { flex: 1; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════
+     PAGE 1  –  Defense / Leads / System Summary
+═══════════════════════════════════════════════════════════════════ -->
+<div class="sheet">
+  <div class="p1-grid">
+
+    <!-- COL 1: Defensive and Competitive Bidding -->
+    <div class="col">
+      <div class="col-hdr">Defensive and Competitive Bidding</div>
+
+      <div class="field-block">
+        <div class="field-block-hdr">Overcalls (Style: Responses: 1/2 Level; Reopening)</div>
+        <div class="field-block-body"></div>
+      </div>
+      <div class="field-block">
+        <div class="field-block-hdr">1NT Overcall (2nd/4th Live; Responses; Reopening)</div>
+        <div class="field-block-body"></div>
+      </div>
+      <div class="field-block">
+        <div class="field-block-hdr">Jump Overcalls (Style; Responses; Unusual NT)</div>
+        <div class="field-block-body"></div>
+      </div>
+      <div class="field-block" style="flex-direction:row; min-height:18px;">
+        <div style="background:#f3f4f6;font-size:7.5px;font-weight:bold;padding:2px 4px;border-right:1px solid black;display:flex;align-items:center;">Reopen:</div>
+        <div style="flex:1;"></div>
+      </div>
+      <div class="field-block">
+        <div class="field-block-hdr">Direct &amp; Jump Cue Bids (Style; Response; Reopen)</div>
+        <div class="field-block-body"></div>
+      </div>
+      <div class="field-block">
+        <div class="field-block-hdr">Vs. NT (vs. Strong/Weak; Reopening; PH)</div>
+        <div class="field-block-body"></div>
+      </div>
+      <div class="field-block">
+        <div class="field-block-hdr">Vs. Preemts (Doubles; Cue-bids; Jumps; NT Bids)</div>
+        <div class="field-block-body"></div>
+      </div>
+      <div class="field-block">
+        <div class="field-block-hdr">Vs. Artificial Strong Openings — i.e. 1♣ or 2♣</div>
+        <div class="field-block-body"></div>
+      </div>
+      <div class="field-block grow">
+        <div class="field-block-hdr">Over Opponents' Takeout Double</div>
+        <div class="field-block-body" style="min-height:30px;"></div>
+      </div>
+    </div><!-- /col1 -->
+
+    <!-- COL 2: Leads and Signals + Doubles -->
+    <div class="col">
+      <div class="col-hdr">Leads and Signals</div>
+
+      <!-- Opening Leads Style -->
+      <div style="border-bottom:2px solid black;">
+        <div class="field-block-hdr" style="border-bottom:1px solid black;">Opening Leads Style</div>
+        <table>
+          <thead>
+            <tr>
+              <th class="label" style="width:28%;"></th>
+              <th class="hdr" style="width:36%;">Lead</th>
+              <th class="hdr" style="width:36%;">In Partner's Suit</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="label">Suit</td><td class="field-grid"></td><td class="field-grid"></td></tr>
+            <tr><td class="label">NT</td><td class="field-grid"></td><td class="field-grid"></td></tr>
+            <tr><td class="label">Subseq</td><td class="field-grid"></td><td class="field-grid"></td></tr>
+            <tr><td class="label">Other:</td><td class="field-grid" colspan="2"></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Leads -->
+      <div style="border-bottom:2px solid black;">
+        <div class="field-block-hdr" style="border-bottom:1px solid black;">Leads</div>
+        <table>
+          <thead>
+            <tr>
+              <th class="label" style="width:28%;">Lead</th>
+              <th class="hdr" style="width:36%;">Vs. Suit</th>
+              <th class="hdr" style="width:36%;">Vs. NT</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="label">Ace</td><td class="field-grid"></td><td class="field-grid"></td></tr>
+            <tr><td class="label">King</td><td class="field-grid"></td><td class="field-grid"></td></tr>
+            <tr><td class="label">Queen</td><td class="field-grid"></td><td class="field-grid"></td></tr>
+            <tr><td class="label">Jack</td><td class="field-grid"></td><td class="field-grid"></td></tr>
+            <tr><td class="label">10</td><td class="field-grid"></td><td class="field-grid"></td></tr>
+            <tr><td class="label">9</td><td class="field-grid"></td><td class="field-grid"></td></tr>
+            <tr><td class="label">Hi-X</td><td class="field-grid"></td><td class="field-grid"></td></tr>
+            <tr><td class="label">Lo-X</td><td class="field-grid"></td><td class="field-grid"></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Signals in Order of Priority -->
+      <div style="border-bottom:2px solid black;">
+        <div class="field-block-hdr" style="border-bottom:1px solid black;">Signals in Order of Priority</div>
+        <table>
+          <thead>
+            <tr>
+              <th class="label" style="width:14%;"></th>
+              <th class="label" style="width:8%;">#</th>
+              <th class="hdr" style="width:26%;">Partner's Lead</th>
+              <th class="hdr" style="width:26%;">Declarer's Lead</th>
+              <th class="hdr" style="width:26%;">Discarding</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="vert" rowspan="3">Suit</td><td class="label" style="text-align:center;">1</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td></tr>
+            <tr><td class="label" style="text-align:center;">2</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td></tr>
+            <tr><td class="label" style="text-align:center;">3</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td></tr>
+            <tr><td class="vert" rowspan="3">NT</td><td class="label" style="text-align:center;">1</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td></tr>
+            <tr><td class="label" style="text-align:center;">2</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td></tr>
+            <tr><td class="label" style="text-align:center;">3</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td></tr>
+            <tr><td class="label" colspan="2" style="font-size:7px;">Signals (inc. Trumps):</td><td class="field-grid" colspan="3"></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Doubles -->
+      <div class="col-hdr" style="border-bottom:1px solid black; border-top:2px solid black;">Doubles</div>
+      <div class="field-block">
+        <div class="field-block-hdr">Takeout Doubles (Style; Responses; Reopening)</div>
+        <div class="field-block-body"></div>
+      </div>
+      <div class="field-block grow">
+        <div class="field-block-hdr">Special, Artificial &amp; Competitive Dbls/Rdls</div>
+        <div class="field-block-body" style="min-height:24px;"></div>
+      </div>
+    </div><!-- /col2 -->
+
+    <!-- COL 3: WBF Card header + System Summary -->
+    <div class="col">
+      <div class="col-hdr" style="letter-spacing:.15em;">W B F Convention Card</div>
+
+      <!-- Meta -->
+      <div style="border-bottom:2px solid black;">
+        <div style="display:flex;border-bottom:1px solid black;min-height:18px;">
+          <div class="label" style="font-size:7.5px;border-right:1px solid black;padding:2px 4px;white-space:nowrap;">Category:</div>
+          <div style="flex:1;font-size:7px;padding:2px 4px;color:#777;">i.e. Green / Blue / Red / HUM</div>
+        </div>
+        <div style="display:flex;border-bottom:1px solid black;min-height:18px;">
+          <div class="label" style="font-size:7.5px;border-right:1px solid black;padding:2px 4px;">NCBO:</div>
+          <div style="flex:1;"></div>
+        </div>
+        <div style="display:flex;border-bottom:1px solid black;min-height:36px;">
+          <div class="label" style="font-size:7.5px;border-right:1px solid black;padding:2px 4px;display:flex;align-items:center;">Players:</div>
+          <div style="flex:1;display:flex;flex-direction:column;">
+            <div style="flex:1;border-bottom:1px solid black;"></div>
+            <div style="flex:1;"></div>
+          </div>
+        </div>
+        <div style="border-top:1px solid black;">
+          <div class="field-block-hdr">Event (Open/Women/Senior/Transnational)</div>
+          <div style="min-height:18px;"></div>
+        </div>
+      </div>
+
+      <!-- System Summary -->
+      <div class="col-hdr" style="border-top:2px solid black; border-bottom:1px solid black;">System Summary</div>
+      <div class="field-block">
+        <div class="field-block-hdr">General Approach and Style</div>
+        <div class="field-block-body"></div>
+      </div>
+      <div class="field-block">
+        <div class="field-block-hdr">Special Bids That May Require Defense</div>
+        <div class="field-block-body"></div>
+      </div>
+      <div class="field-block">
+        <div class="field-block-hdr">Special Forcing Pass Sequences</div>
+        <div class="field-block-body"></div>
+      </div>
+      <div class="field-block">
+        <div class="field-block-hdr">Important Notes</div>
+        <div class="field-block-body"></div>
+      </div>
+      <div class="field-block grow">
+        <div class="field-block-hdr">Psychics</div>
+        <div class="field-block-body" style="min-height:20px;"></div>
+      </div>
+    </div><!-- /col3 -->
+
+  </div><!-- /p1-grid -->
+</div><!-- /sheet 1 -->
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     PAGE 2  –  Openings table
+═══════════════════════════════════════════════════════════════════ -->
+<div class="sheet">
+  <table style="height:100%;table-layout:fixed;">
+    <colgroup>
+      <col style="width:28px;"><!-- Opening -->
+      <col style="width:22px;"><!-- Tick if artificial -->
+      <col style="width:22px;"><!-- Min cards -->
+      <col style="width:22px;"><!-- Neg dbl -->
+      <col><!-- Description -->
+      <col><!-- Responses -->
+      <col><!-- Subsequent Action -->
+      <col><!-- Competitive -->
+    </colgroup>
+    <thead>
+      <tr>
+        <th class="vert" rowspan="2">Opening</th>
+        <th class="vert" rowspan="2">Tick if<br>Artif.</th>
+        <th class="vert" rowspan="2">Min.<br>Cards</th>
+        <th class="vert" rowspan="2">Neg.<br>Dbl Thru</th>
+        <th class="hdr" colspan="4" style="height:14px;"></th>
+      </tr>
+      <tr>
+        <th class="hdr">Description</th>
+        <th class="hdr">Responses</th>
+        <th class="hdr">Subsequent Action</th>
+        <th class="hdr">Competitive &amp; Passed<br>Hand Bidding</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Rows 1♣ to 4NT -->
+      <tr><td class="label" style="text-align:center;">1♣</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td><td class="field"></td><td class="field"></td><td class="field"></td><td class="field"></td></tr>
+      <tr><td class="label" style="text-align:center;color:#dc2626;">1♦</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td><td class="field"></td><td class="field"></td><td class="field"></td><td class="field"></td></tr>
+      <tr><td class="label" style="text-align:center;color:#dc2626;">1♥</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td><td class="field"></td><td class="field"></td><td class="field"></td><td class="field"></td></tr>
+      <tr><td class="label" style="text-align:center;">1♠</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td><td class="field"></td><td class="field"></td><td class="field"></td><td class="field"></td></tr>
+      <tr><td class="label" style="text-align:center;">1NT</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td><td class="field"></td><td class="field"></td><td class="field"></td><td class="field"></td></tr>
+      <tr><td class="label" style="text-align:center;">2♣</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td><td class="field"></td><td class="field"></td><td class="field"></td><td class="field"></td></tr>
+      <tr><td class="label" style="text-align:center;color:#dc2626;">2♦</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td><td class="field"></td><td class="field"></td><td class="field"></td><td class="field"></td></tr>
+      <tr><td class="label" style="text-align:center;color:#dc2626;">2♥</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td><td class="field"></td><td class="field"></td><td class="field"></td><td class="field"></td></tr>
+      <tr><td class="label" style="text-align:center;">2♠</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td><td class="field"></td><td class="field"></td><td class="field"></td><td class="field"></td></tr>
+      <tr><td class="label" style="text-align:center;">2NT</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td><td class="field"></td><td class="field"></td><td class="field"></td><td class="field"></td></tr>
+      <tr><td class="label" style="text-align:center;">3♣</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td><td class="field"></td><td class="field"></td><td class="field"></td><td class="field"></td></tr>
+      <tr><td class="label" style="text-align:center;color:#dc2626;">3♦</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td><td class="field"></td><td class="field"></td><td class="field"></td><td class="field"></td></tr>
+      <tr><td class="label" style="text-align:center;color:#dc2626;">3♥</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td><td class="field"></td><td class="field"></td><td class="field"></td><td class="field"></td></tr>
+      <tr><td class="label" style="text-align:center;">3♠</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td><td class="field"></td><td class="field"></td><td class="field"></td><td class="field"></td></tr>
+      <tr><td class="label" style="text-align:center;">3NT</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td><td class="field"></td><td class="field"></td><td class="field"></td><td class="field"></td></tr>
+      <tr><td class="label" style="text-align:center;">4♣</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td><td class="field"></td><td class="field"></td><td class="field"></td><td class="field"></td></tr>
+      <tr><td class="label" style="text-align:center;color:#dc2626;">4♦</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td><td class="field"></td><td class="field"></td><td class="field"></td><td class="field"></td></tr>
+      <tr><td class="label" style="text-align:center;color:#dc2626;">4♥</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td><td class="field"></td><td class="field"></td><td class="field"></td><td class="field"></td></tr>
+      <tr><td class="label" style="text-align:center;">4♠</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td><td class="field"></td><td class="field"></td><td class="field"></td><td class="field"></td></tr>
+      <tr><td class="label" style="text-align:center;">4NT</td><td class="field-grid"></td><td class="field-grid"></td><td class="field-grid"></td><td class="field"></td><td class="field"></td><td class="field"></td><td class="field"></td></tr>
+      <!-- High Level Bidding -->
+      <tr style="height:100%;">
+        <td colspan="8" style="border:1px solid black; vertical-align:top; padding:4px;">
+          <div style="font-size:7.5px;font-weight:bold;text-transform:uppercase;color:#555;margin-bottom:4px;text-align:center;letter-spacing:.1em;">High Level Bidding</div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div><!-- /sheet 2 -->
+
+<div style="text-align:center;padding:8px;color:#555;font-family:sans-serif;font-size:12px;">
+  <button onclick="window.print()" style="padding:8px 20px;background:#2563eb;color:white;border:none;border-radius:6px;cursor:pointer;font-size:14px;">🖨️ Drukuj / Zapisz PDF</button>
+</div>
+
+</body>
+</html>

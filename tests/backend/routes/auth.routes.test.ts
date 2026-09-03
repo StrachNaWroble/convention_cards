@@ -63,6 +63,7 @@ function createAuthService(player = buildPlayer()): AuthService {
       }),
     ),
     getCurrentPlayer: vi.fn(async () => ok(player)),
+    refreshSession: vi.fn(),
   };
 }
 
@@ -79,6 +80,7 @@ function createCardService(): CardService {
     rejectCardAsPartner: vi.fn(),
     activateCard: vi.fn(),
     archiveCard: vi.fn(),
+    unarchiveCard: vi.fn(),
   };
 }
 

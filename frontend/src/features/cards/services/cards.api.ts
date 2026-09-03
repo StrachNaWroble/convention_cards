@@ -61,5 +61,12 @@ export const cardsApi = {
    */
   archiveCard: async (cardId: string): Promise<ConventionCard> => {
     return api.post<ConventionCard>(`/cards/${cardId}/archive`, {});
+  },
+
+  /**
+   * Restores an archived convention card
+   */
+  unarchiveCard: async (cardId: string): Promise<ConventionCard> => {
+    return api.post<ConventionCard>(`/cards/${cardId}/unarchive`, {});
   }
 };

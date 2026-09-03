@@ -69,9 +69,79 @@ export const CardsList: React.FC<CardsListProps> = ({ onViewCard, onEditCard }) 
     }
   };
 
+  const handleRestoreCard = async (cardId: string) => {
+    try {
+      await cardsApi.unarchiveCard(cardId);
+      // Fetch cards again to get correct statuses and ordering, or just update local state
+      fetchCards();
+    } catch (err) {
+      console.error('Failed to restore card', err);
+      alert('Failed to restore card.');
+    }
+  };
+
+  const handleSendToPartner = (cardId: string) => {
+    // Placeholder action as requested
+    alert(`This will open a sharing modal for card ${cardId}`);
+  };
+
+  const activeCards = cards.filter(c => c.status === 'active');
+  const archivedCards = cards.filter(c => c.status === 'archived');
+  const draftCards = cards.filter(c => c.status !== 'active' && c.status !== 'archived');
+
+  const renderCard = (card: ConventionCard, type: 'active' | 'draft' | 'archived') => (
+    <div 
+      key={card.id} 
+      onClick={() => onViewCard?.(card.id)}
+      className={`bg-white/5 backdrop-blur-md rounded-2xl border ${type === 'archived' ? 'border-gray-500/30 opacity-75' : 'border-white/10'} p-6 flex flex-col hover:bg-white/10 transition-all cursor-pointer shadow-lg hover:shadow-indigo-500/20`}
+    >
+      <div className="flex justify-between items-start mb-4 gap-2">
+        <h3 className="text-lg font-semibold text-white flex-1">{card.title || 'Untitled Card'}</h3>
+        <span className={`px-2 py-1 text-xs rounded-full font-medium ${
+          card.status === 'active' ? 'bg-green-500/20 text-green-300' :
+          card.status === 'archived' ? 'bg-gray-500/20 text-gray-400' :
+          'bg-blue-500/20 text-blue-300'
+        }`}>
+          {card.status.replace(/_/g, ' ')}
+        </span>
+      </div>
+      <p className="text-sm text-gray-400 mb-6 flex-1">
+        Last updated: {new Date(card.updatedAt).toLocaleDateString()}
+      </p>
+      
+      <div className="flex flex-col gap-2 mt-auto border-t border-white/5 pt-4" onClick={(e) => e.stopPropagation()}>
+        {type === 'active' && (
+          <>
+            <button onClick={() => handleSendToPartner(card.id)} className="w-full py-2 text-sm font-medium text-white bg-indigo-500/20 hover:bg-indigo-500/40 border border-indigo-500/30 rounded-lg transition-colors">
+              Send to new partner
+            </button>
+            <button onClick={() => handleDeleteCard(card.id)} className="w-full py-2 text-sm font-medium text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-lg transition-colors">
+              Archive
+            </button>
+          </>
+        )}
+        {type === 'draft' && (
+          <>
+            <button onClick={() => handleSendToPartner(card.id)} className="w-full py-2 text-sm font-medium text-white bg-blue-500/20 hover:bg-blue-500/40 border border-blue-500/30 rounded-lg transition-colors">
+              Send to partner
+            </button>
+            <button onClick={() => handleDeleteCard(card.id)} className="w-full py-2 text-sm font-medium text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-lg transition-colors">
+              Archive
+            </button>
+          </>
+        )}
+        {type === 'archived' && (
+          <button onClick={() => handleRestoreCard(card.id)} className="w-full py-2 text-sm font-medium text-green-400 bg-green-500/10 hover:bg-green-500/20 border border-green-500/30 rounded-lg transition-colors">
+            Restore
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center mb-8">
+    <div className="space-y-12">
+      <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-white tracking-tight">My Convention Cards</h2>
           <p className="text-sm text-gray-400 mt-1">Manage your active partnerships and systems</p>
@@ -92,47 +162,39 @@ export const CardsList: React.FC<CardsListProps> = ({ onViewCard, onEditCard }) 
       ) : error ? (
         <div className="text-center py-12 text-red-400">{error}</div>
       ) : cards.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {cards.map(card => (
-            <div 
-              key={card.id} 
-              onClick={() => onViewCard?.(card.id)}
-              className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 p-6 flex flex-col hover:bg-white/10 transition-colors cursor-pointer shadow-lg hover:shadow-indigo-500/20"
-            >
-              <div className="flex justify-between items-start mb-4 gap-2">
-                <h3 className="text-lg font-semibold text-white flex-1">{card.title || 'Untitled Card'}</h3>
-                <div className="flex items-center gap-2">
-                  <span className={`px-2 py-1 text-xs rounded-full font-medium ${
-                    card.status === 'active' ? 'bg-green-500/20 text-green-300' :
-                    card.status === 'draft' ? 'bg-gray-500/20 text-gray-300' :
-                    'bg-blue-500/20 text-blue-300'
-                  }`}>
-                    {card.status.replace(/_/g, ' ')}
-                  </span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteCard(card.id);
-                    }}
-                    className="text-gray-500 hover:text-red-400 transition-colors p-1 rounded-full hover:bg-white/5"
-                    title="Delete card"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
+        <div className="space-y-10">
+          {activeCards.length > 0 && (
+            <section>
+              <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-green-400"></span> Active Cards
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {activeCards.map(c => renderCard(c, 'active'))}
               </div>
-              <p className="text-sm text-gray-400 mb-6 flex-1">
-                Last updated: {new Date(card.updatedAt).toLocaleDateString()}
-              </p>
-              <div className="flex justify-between items-center text-sm border-t border-white/5 pt-4">
-                <span className="text-indigo-300 font-medium hover:text-indigo-200 transition-colors">
-                  View Card &rarr;
-                </span>
+            </section>
+          )}
+
+          {draftCards.length > 0 && (
+            <section>
+              <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-blue-400"></span> Drafts & Pending
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {draftCards.map(c => renderCard(c, 'draft'))}
               </div>
-            </div>
-          ))}
+            </section>
+          )}
+
+          {archivedCards.length > 0 && (
+            <section className="pt-8 border-t border-white/10">
+              <h3 className="text-xl font-bold text-gray-400 mb-4 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-gray-500"></span> Archived Cards
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {archivedCards.map(c => renderCard(c, 'archived'))}
+              </div>
+            </section>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -46,6 +46,7 @@ function createAuthService(player = buildPlayer()): AuthService {
     registerPlayerAccount: vi.fn(),
     loginWithWbfNumber: vi.fn(),
     getCurrentPlayer: vi.fn(async () => ok(player)),
+    refreshSession: vi.fn(),
   };
 }
 
@@ -62,6 +63,7 @@ function createCardService(): CardService {
     rejectCardAsPartner: vi.fn(),
     activateCard: vi.fn(),
     archiveCard: vi.fn(),
+    unarchiveCard: vi.fn(),
   };
 }
 

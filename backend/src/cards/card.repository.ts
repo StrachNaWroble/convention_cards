@@ -187,6 +187,8 @@ export function createDrizzleCardRepository(db: Database): CardRepository {
 
       if (status === "archived") {
         statusDates.archivedAt = updatedAt;
+      } else {
+        statusDates.archivedAt = null;
       }
 
       const [card] = await db

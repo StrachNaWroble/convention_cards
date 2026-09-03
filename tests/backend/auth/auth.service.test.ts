@@ -87,6 +87,7 @@ function createAuthProvider(): AuthProvider {
       }),
     ),
     getUserByAccessToken: vi.fn(async () => ok({ id: "auth-user-1", email: "player@example.com" })),
+    refreshSession: vi.fn(),
     signOut: vi.fn(async () => ok(undefined)),
   };
 }

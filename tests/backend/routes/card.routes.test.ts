@@ -70,6 +70,7 @@ function createAuthService(player = buildPlayer()): AuthService {
     registerPlayerAccount: vi.fn(),
     loginWithWbfNumber: vi.fn(),
     getCurrentPlayer: vi.fn(async () => ok(player)),
+    refreshSession: vi.fn(),
   };
 }
 
@@ -90,6 +91,7 @@ function createCardService(card = buildCard()): CardService {
     ),
     activateCard: vi.fn(async () => ok(buildCard({ ...card, status: "active" }))),
     archiveCard: vi.fn(async () => ok(buildCard({ ...card, status: "archived" }))),
+    unarchiveCard: vi.fn(async () => ok(buildCard({ ...card, status: "draft" }))),
   };
 }
 

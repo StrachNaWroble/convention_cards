@@ -247,5 +247,15 @@ export function createCardRoutes(services: ApiServices): Hono<ApiBindings> {
     return jsonOk(context, result.data);
   });
 
+  routes.post("/:cardId/unarchive", async (context) => {
+    const result = await services.cards.unarchiveCard(context.req.param("cardId"), context.get("player").id);
+
+    if (!result.ok) {
+      return cardErrorResponse(context, result.error, result.message);
+    }
+
+    return jsonOk(context, result.data);
+  });
+
   return routes;
 }

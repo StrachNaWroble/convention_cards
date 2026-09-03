@@ -35,6 +35,7 @@ export type CardService = {
   ): Promise<Result<ConventionCard, CardServiceError>>;
   activateCard(cardId: string, ownerPlayerId: string): Promise<Result<ConventionCard, CardServiceError>>;
   archiveCard(cardId: string, ownerPlayerId: string): Promise<Result<ConventionCard, CardServiceError>>;
+  unarchiveCard(cardId: string, ownerPlayerId: string): Promise<Result<ConventionCard, CardServiceError>>;
 };
 
 type CardServiceDeps = {
@@ -246,6 +247,26 @@ export function createCardService({ cards, partnerships, validation, now = () =>
 
     async archiveCard(cardId, ownerPlayerId) {
       const card = await cards.updateStatus(cardId, ownerPlayerId, "archived", now());
+
+      if (!card) {
+        return err("CARD_NOT_FOUND");
+      }
+
+      return ok(card);
+    },
+
+    async unarchiveCard(cardId, ownerPlayerId) {
+      const existingCard = await cards.findOwnedCard(cardId, ownerPlayerId);
+
+      if (!existingCard) {
+        return err("CARD_NOT_FOUND");
+      }
+
+      if (existingCard.status !== "archived") {
+        return err("CARD_NOT_EDITABLE");
+      }
+
+      const card = await cards.updateStatus(cardId, ownerPlayerId, "draft", now());
 
       if (!card) {
         return err("CARD_NOT_FOUND");
