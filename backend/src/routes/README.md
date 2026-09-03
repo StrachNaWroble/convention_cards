@@ -15,6 +15,8 @@ Expected route groups:
 
 Prefer resource-oriented endpoints over action-heavy names where it stays readable. For example, `POST /cards/:id/submit-for-approval` is acceptable when the operation changes lifecycle state.
 
+Public auth and WBF verification routes are rate limited by client IP. Limit responses use `429` and include retry headers.
+
 ## Implemented Endpoints
 
 ### Health

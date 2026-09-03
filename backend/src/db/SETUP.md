@@ -12,6 +12,11 @@ Create a Supabase project and copy these values into `.env`:
 - `SUPABASE_SERVICE_ROLE_KEY`: private server-only key.
 - `REQUIRE_WBF_VERIFICATION`: optional. Set to `true` in stricter environments to block registration when WBF verification is unavailable.
 - `PASSWORD_RESET_REDIRECT_TO`: optional. Supabase password reset emails can redirect users to this URL.
+- `RATE_LIMIT_ENABLED`: optional. Set to `false` to disable backend rate limiting.
+- `RATE_LIMIT_WINDOW_MS`: optional. Defaults to `60000`.
+- `AUTH_RATE_LIMIT_MAX`: optional. Defaults to `20` requests per window for register/login.
+- `PASSWORD_RESET_RATE_LIMIT_MAX`: optional. Defaults to `5` requests per window.
+- `WBF_VERIFICATION_RATE_LIMIT_MAX`: optional. Defaults to `30` requests per window.
 
 Keep `SUPABASE_SERVICE_ROLE_KEY` out of frontend code.
 

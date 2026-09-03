@@ -13,6 +13,7 @@ import { createCardExportService } from "./exports/index.js";
 import { createDrizzlePartnershipRepository, createPartnershipService } from "./partnerships/index.js";
 import { createPlayerProfileService } from "./players/playerProfile.service.js";
 import { createDrizzlePlayerRepository } from "./players/player.repository.js";
+import { createAppRateLimiters } from "./security/index.js";
 import { createDrizzleSharingRepository, createSharingService } from "./sharing/index.js";
 import { createDrizzleTemplateRepository, createTemplateService } from "./templates/index.js";
 import { createCardValidationService } from "./validation/index.js";
@@ -31,6 +32,13 @@ const cardValidation = createCardValidationService();
 const activity = createActivityService({
   activity: activityRepository,
   cards: cardRepository,
+});
+const rateLimits = createAppRateLimiters({
+  enabled: env.rateLimitEnabled,
+  windowMs: env.rateLimitWindowMs,
+  authMaxRequests: env.authRateLimitMax,
+  passwordResetMaxRequests: env.passwordResetRateLimitMax,
+  wbfVerificationMaxRequests: env.wbfVerificationRateLimitMax,
 });
 const auth = createAuthService({
   players: playerRepository,
@@ -74,6 +82,7 @@ const app = createApp({
   exports: cardExports,
   partnerships,
   playerProfiles,
+  rateLimits,
   sharing,
   templates,
   wbfVerification: createWbfPeopleFinderService(),

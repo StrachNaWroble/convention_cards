@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { MiddlewareHandler } from "hono";
 import { z } from "zod";
 
 import type { ApiBindings, ApiServices } from "./api.types.js";
@@ -11,8 +12,10 @@ const verifySchema = z.object({
 
 export function createWbfVerificationRoutes(services: ApiServices): Hono<ApiBindings> {
   const routes = new Hono<ApiBindings>();
+  const passThroughRateLimit: MiddlewareHandler<ApiBindings> = async (_context, next) => next();
+  const wbfVerificationRateLimit = services.rateLimits?.wbfVerification ?? passThroughRateLimit;
 
-  routes.post("/verify", async (context) => {
+  routes.post("/verify", wbfVerificationRateLimit, async (context) => {
     const body = await parseJsonBody(context, verifySchema);
 
     if (!body.ok) {

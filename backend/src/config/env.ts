@@ -5,6 +5,11 @@ export type AppEnv = {
   supabaseServiceRoleKey?: string;
   requireWbfVerification: boolean;
   passwordResetRedirectTo?: string;
+  rateLimitEnabled: boolean;
+  rateLimitWindowMs: number;
+  authRateLimitMax: number;
+  passwordResetRateLimitMax: number;
+  wbfVerificationRateLimitMax: number;
 };
 
 type EnvSource = Record<string, string | undefined>;
@@ -19,6 +24,22 @@ function requireEnv(source: EnvSource, name: string): string {
   return value;
 }
 
+function optionalPositiveInteger(source: EnvSource, name: string, defaultValue: number): number {
+  const rawValue = source[name];
+
+  if (!rawValue) {
+    return defaultValue;
+  }
+
+  const value = Number(rawValue);
+
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new Error(`Environment variable ${name} must be a positive integer.`);
+  }
+
+  return value;
+}
+
 export function loadAppEnv(source: EnvSource = process.env): AppEnv {
   return {
     databaseUrl: requireEnv(source, "DATABASE_URL"),
@@ -27,5 +48,10 @@ export function loadAppEnv(source: EnvSource = process.env): AppEnv {
     supabaseServiceRoleKey: source.SUPABASE_SERVICE_ROLE_KEY,
     requireWbfVerification: source.REQUIRE_WBF_VERIFICATION === "true",
     passwordResetRedirectTo: source.PASSWORD_RESET_REDIRECT_TO,
+    rateLimitEnabled: source.RATE_LIMIT_ENABLED !== "false",
+    rateLimitWindowMs: optionalPositiveInteger(source, "RATE_LIMIT_WINDOW_MS", 60_000),
+    authRateLimitMax: optionalPositiveInteger(source, "AUTH_RATE_LIMIT_MAX", 20),
+    passwordResetRateLimitMax: optionalPositiveInteger(source, "PASSWORD_RESET_RATE_LIMIT_MAX", 5),
+    wbfVerificationRateLimitMax: optionalPositiveInteger(source, "WBF_VERIFICATION_RATE_LIMIT_MAX", 30),
   };
 }
