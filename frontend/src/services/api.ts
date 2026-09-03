@@ -1,6 +1,6 @@
 // frontend/src/services/api.ts
 
-// Ten URL w przyszłości można podmienić na zmienną środowiskową np. import.meta.env.VITE_API_URL
+// URL can be replaced with env var later (e.g. import.meta.env.VITE_API_URL)
 const API_BASE_URL = 'http://localhost:3000';
 
 export interface ApiErrorResponse {
@@ -24,13 +24,13 @@ export class ApiError extends Error {
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
-  // Automatyczne ustawienie nagłówków JSON jeśli wysyłamy dane
+  // Automatically set JSON headers if sending data
   const headers = new Headers(options.headers);
   if (options.body && typeof options.body === 'string' && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 
-  // W tym miejscu w przyszłości można dodawać token z localStorage/stanu
+  // Inject auth token from storage if available
   const token = sessionStorage.getItem('token') || localStorage.getItem('token');
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
@@ -45,17 +45,17 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   try {
     data = await response.json();
   } catch (err) {
-    throw new Error('Nie udało się przetworzyć odpowiedzi od serwera (format niezgodny z JSON).');
+    throw new Error('Failed to parse server response (invalid JSON format).');
   }
 
   if (!response.ok || (data && data.ok === false)) {
-    // Domyślne wartości z API Hono
+    // Default error handling from Hono API
     const errorCode = data.error || 'UNKNOWN_ERROR';
-    const errorMessage = data.message || 'Wystąpił nieznany błąd serwera.';
+    const errorMessage = data.message || 'An unknown server error occurred.';
     throw new ApiError(errorMessage, errorCode, response.status);
   }
 
-  // Jeśli serwer zwrócił odp. ok, a dane są zapakowane w obiekt { data: ... }, rozpakuj je
+  // Extract payload if wrapped in { data: ... }
   if (data && data.data !== undefined) {
     return data.data;
   }

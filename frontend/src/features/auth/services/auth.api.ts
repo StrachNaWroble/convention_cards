@@ -30,10 +30,10 @@ export interface LoginResponse {
 
 export const authApi = {
   /**
-   * Rejestruje nowego użytkownika w systemie (Supabase + Drizzle)
+   * Registers a new user
    */
   register: async (data: RegisterFormData): Promise<RegisterResponse> => {
-    // API oczekuje email, wbfNumber, password. Odrzucamy confirmPassword ze schematu
+    // Schema validation allows confirmPassword, but backend only expects email, wbfNumber, password
     const payload = {
       email: data.email,
       wbfNumber: data.wbfNumber,
@@ -43,21 +43,21 @@ export const authApi = {
   },
 
   /**
-   * Loguje użytkownika po WBF Number i haśle
+   * Authenticates user using WBF Number and password
    */
   login: async (data: LoginFormData): Promise<LoginResponse> => {
     return api.post<LoginResponse>('/auth/login', data);
   },
 
   /**
-   * Odświeża sesję za pomocą refreshTokena
+   * Refreshes the authentication session using a refresh token
    */
   refresh: async (refreshToken: string): Promise<LoginResponse> => {
     return api.post<LoginResponse>('/auth/refresh', { refreshToken });
   },
 
   /**
-   * Wylogowuje użytkownika
+   * Signs out the current user and clears local tokens
    */
   logout: async (): Promise<{ signedOut: boolean }> => {
     localStorage.removeItem('token');
@@ -67,7 +67,7 @@ export const authApi = {
   },
 
   /**
-   * Pobiera aktualnie zalogowanego gracza (wymaga tokena)
+   * Fetches the currently authenticated player profile
    */
   getMe: async (): Promise<{ player: Player }> => {
     return api.get<{ player: Player }>('/auth/me');

@@ -26,7 +26,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading = fals
     }
     
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Czyszczenie błędów przy wpisywaniu
+    // Clear specific field errors while typing
     if (errors[name as keyof LoginFormData]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
@@ -36,7 +36,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading = fals
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Walidacja używając Zod
+      // Validate form data with Zod schema
       const validData = loginSchema.parse(formData);
       setErrors({});
       if (onSubmit) {
