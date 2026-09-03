@@ -46,67 +46,91 @@
   }
 }
 
-/* Print styles for convention card PDF export */
+/* ================================================================
+   PRINT STYLES — WBF Convention Card (A4 Landscape)
+   ================================================================ */
 @media print {
+
+  /* Page setup */
   @page {
     size: A4 landscape;
     margin: 5mm;
   }
 
-  /* Hide everything except print pages */
-  body * {
-    visibility: hidden;
-  }
-
-  .print-page,
-  .print-page * {
-    visibility: visible !important;
-  }
-
-  .print-page {
-    position: relative;
-    width: 100% !important;
-    max-width: none !important;
-    min-height: auto !important;
-    border: none !important;
+  /* ── 1. Reset overflow / scroll / background on ALL ancestors ──
+     This is the key fix: the editor sits many levels deep inside
+     a scrollable flex container.  We clear every element's overflow
+     and height so nothing clips the print-page divs.
+     We do NOT touch `display` here, so flex columns in PageOneForm
+     and the openings table keep working.                          */
+  * {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    background-color: transparent !important;
+    background-image: none !important;
     box-shadow: none !important;
-    margin: 0 !important;
-    padding: 4mm !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ── 2. Re-apply white background where needed ──
+     (bg-gray-100 cell headers etc. are restored by print-color-adjust) */
+  .print-page {
+    background-color: white !important;
+  }
+
+  /* ── 3. Hide everything that is NOT part of the card ── */
+  .no-print {
+    display: none !important;
+  }
+
+  /* ── 4. Each A4 page ── */
+  .print-page {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 287mm !important;
+    height: 200mm !important;
+    min-height: 200mm !important;
+    max-height: 200mm !important;
+    padding: 2mm !important;
+    margin: 0 auto !important;
+    border: none !important;
+    overflow: hidden !important;
     page-break-after: always;
     break-after: page;
   }
 
   .print-page:last-of-type {
     page-break-after: avoid;
+    break-after: avoid;
   }
 
-  /* Hide non-print UI elements */
-  .no-print,
-  [class*="sticky"],
-  button {
-    display: none !important;
+  /* PageOneForm fills the page height */
+  .print-page > * {
+    flex: 1 !important;
+    min-height: 0 !important;
   }
 
-  /* Make inputs look like filled text for print */
+  /* Openings table on page 2 fills its container */
+  .print-page table {
+    height: 100% !important;
+    width: 100% !important;
+  }
+
+  /* Inputs / textareas render as plain text */
   .print-page input,
   .print-page textarea {
     border: none !important;
     outline: none !important;
     background: transparent !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    color: black !important;
   }
 
-  /* Preserve background colors */
-  .print-page .bg-gray-100 {
-    background-color: #f3f4f6 !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
-  .print-page .bg-gray-200 {
-    background-color: #e5e7eb !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
+  /* ── 5. Restore cell background colours ──
+     (print-color-adjust on * above keeps bg-gray-100, bg-white etc.) */
+  .bg-gray-100 { background-color: #f3f4f6 !important; }
+  .bg-white    { background-color: #ffffff !important; }
+  .bg-gray-50  { background-color: #f9fafb !important; }
 }

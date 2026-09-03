@@ -42,15 +42,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onLogout }) => {
 
   return (
     <div className="min-h-screen bg-slate-900 flex text-gray-100 font-sans selection:bg-indigo-500/30">
-      {/* Background gradients */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+      {/* Background gradients — hidden on print */}
+      <div className="no-print fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] right-[-5%] w-[50%] h-[50%] rounded-full bg-indigo-900/40 blur-[120px] mix-blend-screen"></div>
         <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-purple-900/30 blur-[120px] mix-blend-screen"></div>
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03]"></div>
       </div>
 
-      {/* Sidebar Layout */}
-      <div className="w-64 flex-shrink-0 border-r border-white/10 bg-white/[0.02] backdrop-blur-xl relative z-10 flex flex-col">
+      {/* Sidebar Layout — hidden on print */}
+      <div className="no-print w-64 flex-shrink-0 border-r border-white/10 bg-white/[0.02] backdrop-blur-xl relative z-10 flex flex-col">
         {/* Brand */}
         <div className="h-20 flex items-center px-6 border-b border-white/10">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg mr-3">
@@ -124,7 +124,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onLogout }) => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-0 relative z-10">
-        <header className="h-20 px-8 flex items-center justify-between border-b border-white/5 bg-white/[0.01] backdrop-blur-sm">
+        <header className="no-print h-20 px-8 flex items-center justify-between border-b border-white/5 bg-white/[0.01] backdrop-blur-sm">
           <h1 className="text-xl font-medium text-gray-200">
             {activeTab === 'cards' && 'My Convention Cards'}
             {activeTab === 'card_details' && 'Card Details'}

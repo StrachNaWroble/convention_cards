@@ -194,10 +194,10 @@ export const CardEditor: React.FC<CardEditorProps> = ({ cardId, onBack }) => {
       </div>
 
       {/* Editor Content */}
-      <div className="flex-1 overflow-auto p-8 flex flex-col items-center gap-8 bg-gray-200">
+      <div className="flex-1 overflow-auto p-6 flex flex-col items-center gap-6 bg-gray-200">
         
-        {/* Toolbar (Sticky across both pages) */}
-        <div className="sticky top-0 z-50 flex gap-2 p-2 bg-white border border-gray-300 rounded-md shadow-md w-fit items-center">
+        {/* Toolbar (Sticky across both pages) — hidden on print */}
+        <div className="no-print sticky top-0 z-50 flex gap-2 p-2 bg-white border border-gray-300 rounded-md shadow-md w-fit items-center">
           <span className="text-sm font-semibold text-gray-700 mr-2">Wstaw symbol:</span>
           <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => insertSymbol('♣')} className="w-8 h-8 flex items-center justify-center bg-gray-50 border border-gray-300 rounded hover:bg-gray-100 text-gray-900 font-bold shadow-sm transition-colors">♣</button>
           <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => insertSymbol('♦')} className="w-8 h-8 flex items-center justify-center bg-gray-50 border border-gray-300 rounded hover:bg-gray-100 text-red-600 font-bold shadow-sm transition-colors">♦</button>
@@ -206,28 +206,41 @@ export const CardEditor: React.FC<CardEditorProps> = ({ cardId, onBack }) => {
           <span className="text-xs text-gray-400 ml-2">(Kliknij pole tekstowe, a następnie symbol)</span>
         </div>
 
-        {/* Page 1: General & Defense */}
-        <div className="w-full max-w-[1200px] min-h-[210mm] flex flex-col font-sans bg-white shadow-xl border border-gray-300 print-page p-4">
-          <PageOneForm data={card.cardData} onChange={handlePageOneChange} />
-        </div>
+        {/* Print container — only this is visible during print */}
+        <div className="print-container w-full flex flex-col items-center gap-6">
 
-        {/* Page 2: Openings */}
-        <div className="w-full max-w-[1200px] min-h-[210mm] flex flex-col font-sans bg-white p-4 shadow-xl border border-gray-300 print-page text-gray-900">
-          <div className="w-full overflow-x-auto pb-4 h-full flex flex-col">
-            <table className="w-full border-collapse border-2 border-black text-xs h-full">
+          {/* Page 1: General & Defense */}
+          <div className="w-full max-w-[297mm] min-h-[210mm] flex flex-col font-sans bg-white shadow-xl border border-gray-300 print-page">
+            {/* PageOneForm must fill the whole height - it uses flex-1 internally */}
+            <PageOneForm data={card.cardData} onChange={handlePageOneChange} />
+          </div>
+
+          {/* Page 2: Openings — table fills the whole page */}
+          <div className="w-full max-w-[297mm] min-h-[210mm] flex flex-col font-sans bg-white p-3 shadow-xl border border-gray-300 print-page text-gray-900">
+            <table className="w-full border-collapse border-2 border-black text-xs h-full table-fixed">
+              <colgroup>
+                <col style={{width: '30px'}} />
+                <col style={{width: '22px'}} />
+                <col style={{width: '22px'}} />
+                <col style={{width: '22px'}} />
+                <col />
+                <col />
+                <col />
+                <col />
+              </colgroup>
               <thead>
                 <tr>
-                  <th rowSpan={2} className="border border-black p-1 w-10 bg-gray-100 text-[10px] font-bold uppercase text-center [writing-mode:vertical-rl] rotate-180">Opening</th>
-                  <th rowSpan={2} className="border border-black p-1 w-8 bg-gray-100 text-[10px] font-bold uppercase text-center [writing-mode:vertical-rl] rotate-180">Tick if<br/>Artificial</th>
-                  <th rowSpan={2} className="border border-black p-1 w-8 bg-gray-100 text-[10px] font-bold uppercase text-center [writing-mode:vertical-rl] rotate-180">Min. No. of<br/>Cards</th>
-                  <th rowSpan={2} className="border border-black p-1 w-8 bg-gray-100 text-[10px] font-bold uppercase text-center [writing-mode:vertical-rl] rotate-180">Neg. Dbl<br/>Thru</th>
-                  <th colSpan={4} className="border border-black bg-gray-200 h-6"></th>
+                  <th rowSpan={2} className="border border-black p-1 bg-gray-100 text-[9px] font-bold uppercase text-center [writing-mode:vertical-rl] rotate-180">Opening</th>
+                  <th rowSpan={2} className="border border-black p-1 bg-gray-100 text-[8px] font-bold uppercase text-center [writing-mode:vertical-rl] rotate-180">Tick if<br/>Artif.</th>
+                  <th rowSpan={2} className="border border-black p-1 bg-gray-100 text-[8px] font-bold uppercase text-center [writing-mode:vertical-rl] rotate-180">Min.<br/>Cards</th>
+                  <th rowSpan={2} className="border border-black p-1 bg-gray-100 text-[8px] font-bold uppercase text-center [writing-mode:vertical-rl] rotate-180">Neg. Dbl<br/>Thru</th>
+                  <th colSpan={4} className="border border-black bg-gray-200 h-5"></th>
                 </tr>
                 <tr>
-                  <th className="border border-black p-1 bg-gray-100 text-[10px] font-bold uppercase text-center w-[22%]">Description</th>
-                  <th className="border border-black p-1 bg-gray-100 text-[10px] font-bold uppercase text-center w-[22%]">Responses</th>
-                  <th className="border border-black p-1 bg-gray-100 text-[10px] font-bold uppercase text-center w-[22%]">Subsequent Action</th>
-                  <th className="border border-black p-1 bg-gray-100 text-[10px] font-bold uppercase text-center w-[22%]">Competitive & Passed<br/>Hand Bidding</th>
+                  <th className="border border-black p-1 bg-gray-100 text-[9px] font-bold uppercase text-center">Description</th>
+                  <th className="border border-black p-1 bg-gray-100 text-[9px] font-bold uppercase text-center">Responses</th>
+                  <th className="border border-black p-1 bg-gray-100 text-[9px] font-bold uppercase text-center">Subsequent Action</th>
+                  <th className="border border-black p-1 bg-gray-100 text-[9px] font-bold uppercase text-center">Competitive & Passed<br/>Hand Bidding</th>
                 </tr>
               </thead>
               <tbody>
@@ -319,10 +332,11 @@ export const CardEditor: React.FC<CardEditorProps> = ({ cardId, onBack }) => {
                 })}
               </tbody>
             </table>
-          </div>
+          </div>{/* /Page 2 */}
 
-        </div>
-      </div>
+        </div>{/* /print-container */}
+      </div>{/* /Editor Content */}
     </div>
   );
 };
+
