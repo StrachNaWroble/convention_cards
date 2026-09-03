@@ -47,5 +47,12 @@ export const cardsApi = {
    */
   createCard: async (title?: string, partnershipId?: string): Promise<ConventionCard> => {
     return api.post<ConventionCard>('/cards', { title, partnershipId });
+  },
+
+  /**
+   * Aktualizuje kartę konwencyjną
+   */
+  updateCard: async (cardId: string, updates: { title?: string; cardData?: any }): Promise<ConventionCard> => {
+    return api.patch<ConventionCard>(`/cards/${cardId}`, updates);
   }
 };
