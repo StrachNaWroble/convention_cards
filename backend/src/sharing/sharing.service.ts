@@ -1,3 +1,4 @@
+import type { ActivityWriter } from "../activity/index.js";
 import type { CardRepository } from "../cards/card.repository.js";
 import type { PartnershipRepository } from "../partnerships/index.js";
 import { err, ok, type Result } from "../shared/result.js";
@@ -27,6 +28,7 @@ type SharingServiceDeps = {
   cards: CardRepository;
   partnerships: Pick<PartnershipRepository, "findById">;
   sharing: SharingRepository;
+  activity?: ActivityWriter;
   now?: () => Date;
   generateToken?: () => string;
 };
@@ -40,6 +42,7 @@ export function createSharingService({
   cards,
   partnerships,
   sharing,
+  activity,
   now = () => new Date(),
   generateToken = generateShareToken,
 }: SharingServiceDeps): SharingService {
@@ -68,6 +71,19 @@ export function createSharingService({
           cardId: card.id,
           tokenHash: hashShareToken(token),
           expiresAt: input.expiresAt,
+        });
+
+        await activity?.recordEvent({
+          eventType: "share_link.created",
+          actorPlayerId: input.ownerPlayerId,
+          entityType: "share_link",
+          entityId: link.id,
+          cardId: card.id,
+          partnershipId: card.partnershipId,
+          shareLinkId: link.id,
+          metadata: {
+            expiresAt: link.expiresAt?.toISOString() ?? null,
+          },
         });
 
         return ok({
@@ -101,6 +117,15 @@ export function createSharingService({
       if (!revoked) {
         return err("SHARE_LINK_NOT_FOUND");
       }
+
+      await activity?.recordEvent({
+        eventType: "share_link.revoked",
+        actorPlayerId: ownerPlayerId,
+        entityType: "share_link",
+        entityId: revoked.id,
+        cardId: revoked.cardId,
+        shareLinkId: revoked.id,
+      });
 
       return ok(toPublicShareLink(revoked));
     },

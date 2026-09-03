@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import type { ActivityWriter } from "../../../backend/src/activity/index.js";
 import { createCardService } from "../../../backend/src/cards/card.service.js";
 import type { CardRepository } from "../../../backend/src/cards/card.repository.js";
 import type { CardStatus, ConventionCard, PartnerCardReviewStatus } from "../../../backend/src/cards/card.types.js";
@@ -246,10 +247,17 @@ function createValidationService(valid = true): CardValidationService {
   };
 }
 
+function createActivityWriter(): ActivityWriter {
+  return {
+    recordEvent: vi.fn(),
+  };
+}
+
 describe("card service", () => {
   it("creates an incomplete blank draft that can be autosaved later", async () => {
     const repository = createCardRepository();
-    const service = createCardService({ cards: repository });
+    const activity = createActivityWriter();
+    const service = createCardService({ cards: repository, activity });
 
     const result = await service.createBlankDraft({
       ownerPlayerId: "player-1",
@@ -261,6 +269,18 @@ describe("card service", () => {
     expect(result.data.status).toBe("draft");
     expect(result.data.cardData).toEqual({});
     expect(result.data.title).toBe("Untitled card");
+    expect(activity.recordEvent).toHaveBeenCalledWith({
+      eventType: "card.created",
+      actorPlayerId: "player-1",
+      entityType: "card",
+      entityId: "card-1",
+      cardId: "card-1",
+      partnershipId: null,
+      metadata: {
+        title: "Untitled card",
+        status: "draft",
+      },
+    });
   });
 
   it("autosaves draft card data without requiring completed WBF fields", async () => {
@@ -382,8 +402,10 @@ describe("card service", () => {
   it("submits a draft for partner approval", async () => {
     const submitTime = new Date("2026-09-02T13:00:00.000Z");
     const repository = createCardRepository([buildCard()]);
+    const activity = createActivityWriter();
     const service = createCardService({
       cards: repository,
+      activity,
       now: () => submitTime,
     });
 
@@ -394,6 +416,14 @@ describe("card service", () => {
 
     expect(result.data.status).toBe("pending_partner_approval");
     expect(result.data.submittedAt).toEqual(submitTime);
+    expect(activity.recordEvent).toHaveBeenCalledWith({
+      eventType: "card.submitted_for_approval",
+      actorPlayerId: "player-1",
+      entityType: "card",
+      entityId: "card-1",
+      cardId: "card-1",
+      partnershipId: null,
+    });
   });
 
   it("lists submitted cards waiting for partner review", async () => {

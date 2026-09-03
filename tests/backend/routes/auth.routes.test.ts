@@ -366,6 +366,7 @@ describe("auth routes", () => {
 
     expect(response.status).toBe(200);
     expect(auth.changePassword).toHaveBeenCalledWith({
+      playerId: "player-1",
       authUserId: "auth-user-1",
       email: "player@example.com",
       currentPassword: "safe-password",

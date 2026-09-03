@@ -11,6 +11,7 @@ Expected route groups:
 - `templates`: list available starting templates.
 - `sharing`: create/revoke public links and partner-only links.
 - `exports`: PDF export and print-ready card rendering support.
+- `activity`: authenticated player activity and card history.
 
 Prefer resource-oriented endpoints over action-heavy names where it stays readable. For example, `POST /cards/:id/submit-for-approval` is acceptable when the operation changes lifecycle state.
 
@@ -54,6 +55,7 @@ Authorization: Bearer <access-token>
 - `POST /cards/:cardId/review/reject`: reject a submitted card as the invited partner.
 - `POST /cards/:cardId/activate`: activate a partner-approved card after validation.
 - `GET /cards/:cardId/export`: return a print/PDF-ready JSON export payload for an active owned card.
+- `GET /cards/:cardId/history`: list recent activity events for an owned card.
 - `POST /cards/:cardId/archive`: archive a card.
 - `GET /cards/:cardId/share-links`: list share links for an owned card.
 - `POST /cards/:cardId/share-links`: create a public read-only share link for an active card.
@@ -92,3 +94,13 @@ Authorization: Bearer <access-token>
 
 - `POST /share-links/:shareLinkId/revoke`: revoke an owned share link.
 - `GET /shared/cards/:token`: publicly load an active shared card by raw share token.
+
+### Activity
+
+All activity routes require:
+
+```text
+Authorization: Bearer <access-token>
+```
+
+- `GET /activity`: list recent activity events related to the signed-in player.

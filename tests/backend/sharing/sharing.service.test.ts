@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import type { ActivityWriter } from "../../../backend/src/activity/index.js";
 import type { CardRepository } from "../../../backend/src/cards/card.repository.js";
 import type { CardStatus, ConventionCard } from "../../../backend/src/cards/card.types.js";
 import type { PartnershipRepository } from "../../../backend/src/partnerships/index.js";
@@ -163,13 +164,21 @@ function createSharingRepository(seed: ShareLink[] = []): SharingRepository & { 
   };
 }
 
+function createActivityWriter(): ActivityWriter {
+  return {
+    recordEvent: vi.fn(),
+  };
+}
+
 describe("sharing service", () => {
   it("creates a share link for an active card with an approved partnership", async () => {
     const sharing = createSharingRepository();
+    const activity = createActivityWriter();
     const service = createSharingService({
       cards: createCardRepository([buildCard()]),
       partnerships: createPartnershipRepository([buildPartnership()]),
       sharing,
+      activity,
       generateToken: () => "raw-token",
     });
 
@@ -185,6 +194,18 @@ describe("sharing service", () => {
     expect(result.data.link).not.toHaveProperty("tokenHash");
     expect(sharing.createdInputs[0].tokenHash).toBe(hashShareToken("raw-token"));
     expect(sharing.createdInputs[0].tokenHash).not.toBe("raw-token");
+    expect(activity.recordEvent).toHaveBeenCalledWith({
+      eventType: "share_link.created",
+      actorPlayerId: "player-1",
+      entityType: "share_link",
+      entityId: "share-link-1",
+      cardId: "card-1",
+      partnershipId: "partnership-1",
+      shareLinkId: "share-link-1",
+      metadata: {
+        expiresAt: null,
+      },
+    });
   });
 
   it("blocks sharing a draft card", async () => {

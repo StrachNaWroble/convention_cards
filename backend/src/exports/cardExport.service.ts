@@ -1,3 +1,4 @@
+import type { ActivityWriter } from "../activity/index.js";
 import type { CardService } from "../cards/index.js";
 import type { Player } from "../players/player.types.js";
 import { err, ok, type Result } from "../shared/result.js";
@@ -13,12 +14,14 @@ export type CardExportService = {
 type CardExportServiceDeps = {
   cards: Pick<CardService, "getMyCard">;
   validation: CardValidationService;
+  activity?: ActivityWriter;
   now?: () => Date;
 };
 
 export function createCardExportService({
   cards,
   validation,
+  activity,
   now = () => new Date(),
 }: CardExportServiceDeps): CardExportService {
   return {
@@ -39,12 +42,13 @@ export function createCardExportService({
         return err("CARD_NOT_READY_FOR_EXPORT", validationResult.issues.map((issue) => issue.message).join(" "));
       }
 
-      return ok({
+      const generatedAt = now().toISOString();
+      const payload: CardExportPayload = {
         export: {
           kind: "wbf-convention-card",
           format: "json",
           version: 1,
-          generatedAt: now().toISOString(),
+          generatedAt,
         },
         layout: {
           profile: "wbf-two-page",
@@ -65,7 +69,22 @@ export function createCardExportService({
           activatedAt: card.data.activatedAt,
           updatedAt: card.data.updatedAt,
         },
+      };
+
+      await activity?.recordEvent({
+        eventType: "card.exported",
+        actorPlayerId: owner.id,
+        entityType: "card",
+        entityId: card.data.id,
+        cardId: card.data.id,
+        partnershipId: card.data.partnershipId,
+        metadata: {
+          format: payload.export.format,
+          generatedAt,
+        },
       });
+
+      return ok(payload);
     },
   };
 }

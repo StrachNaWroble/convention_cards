@@ -1,3 +1,4 @@
+import type { ActivityWriter } from "../activity/index.js";
 import { err, ok, type Result } from "../shared/result.js";
 import type { PartnershipRepository } from "../partnerships/partnership.repository.js";
 import type { Player } from "../players/player.types.js";
@@ -41,10 +42,17 @@ type CardServiceDeps = {
   cards: CardRepository;
   partnerships?: Pick<PartnershipRepository, "findById">;
   validation?: CardValidationService;
+  activity?: ActivityWriter;
   now?: () => Date;
 };
 
-export function createCardService({ cards, partnerships, validation, now = () => new Date() }: CardServiceDeps): CardService {
+export function createCardService({
+  cards,
+  partnerships,
+  validation,
+  activity,
+  now = () => new Date(),
+}: CardServiceDeps): CardService {
   return {
     async createBlankDraft(input) {
       try {
@@ -53,6 +61,19 @@ export function createCardService({ cards, partnerships, validation, now = () =>
           partnershipId: input.partnershipId ?? null,
           title: input.title?.trim() || "Untitled card",
           cardData: input.cardData ?? {},
+        });
+
+        await activity?.recordEvent({
+          eventType: "card.created",
+          actorPlayerId: input.ownerPlayerId,
+          entityType: "card",
+          entityId: card.id,
+          cardId: card.id,
+          partnershipId: card.partnershipId,
+          metadata: {
+            title: card.title,
+            status: card.status,
+          },
         });
 
         return ok(card);
@@ -97,7 +118,22 @@ export function createCardService({ cards, partnerships, validation, now = () =>
       }
 
       try {
-        return ok(await cards.createDraftRevisionFromCard(existingCard));
+        const revision = await cards.createDraftRevisionFromCard(existingCard);
+
+        await activity?.recordEvent({
+          eventType: "card.revision_created",
+          actorPlayerId: revision.ownerPlayerId,
+          entityType: "card",
+          entityId: revision.id,
+          cardId: revision.id,
+          partnershipId: revision.partnershipId,
+          metadata: {
+            sourceCardId: existingCard.id,
+            revisionNumber: revision.revisionNumber,
+          },
+        });
+
+        return ok(revision);
       } catch (error) {
         return err("CARD_CREATE_FAILED", error instanceof Error ? error.message : "Could not create card revision.");
       }
@@ -146,6 +182,15 @@ export function createCardService({ cards, partnerships, validation, now = () =>
         return err("CARD_NOT_FOUND");
       }
 
+      await activity?.recordEvent({
+        eventType: "card.submitted_for_approval",
+        actorPlayerId: ownerPlayerId,
+        entityType: "card",
+        entityId: card.id,
+        cardId: card.id,
+        partnershipId: card.partnershipId,
+      });
+
       return ok(card);
     },
 
@@ -170,6 +215,15 @@ export function createCardService({ cards, partnerships, validation, now = () =>
       if (!card) {
         return err("CARD_NOT_PENDING_REVIEW");
       }
+
+      await activity?.recordEvent({
+        eventType: "card.approved_by_partner",
+        actorPlayerId: player.id,
+        entityType: "card",
+        entityId: card.id,
+        cardId: card.id,
+        partnershipId: card.partnershipId,
+      });
 
       return ok(card);
     },
@@ -202,6 +256,18 @@ export function createCardService({ cards, partnerships, validation, now = () =>
       if (!card) {
         return err("CARD_NOT_PENDING_REVIEW");
       }
+
+      await activity?.recordEvent({
+        eventType: "card.rejected_by_partner",
+        actorPlayerId: player.id,
+        entityType: "card",
+        entityId: card.id,
+        cardId: card.id,
+        partnershipId: card.partnershipId,
+        metadata: {
+          hasRejectionReason: Boolean(trimmedReason),
+        },
+      });
 
       return ok(card);
     },
@@ -241,6 +307,15 @@ export function createCardService({ cards, partnerships, validation, now = () =>
         return err("CARD_NOT_FOUND");
       }
 
+      await activity?.recordEvent({
+        eventType: "card.activated",
+        actorPlayerId: ownerPlayerId,
+        entityType: "card",
+        entityId: card.id,
+        cardId: card.id,
+        partnershipId: card.partnershipId,
+      });
+
       return ok(card);
     },
 
@@ -250,6 +325,15 @@ export function createCardService({ cards, partnerships, validation, now = () =>
       if (!card) {
         return err("CARD_NOT_FOUND");
       }
+
+      await activity?.recordEvent({
+        eventType: "card.archived",
+        actorPlayerId: ownerPlayerId,
+        entityType: "card",
+        entityId: card.id,
+        cardId: card.id,
+        partnershipId: card.partnershipId,
+      });
 
       return ok(card);
     },

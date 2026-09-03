@@ -42,6 +42,7 @@ This creates the first app tables:
 - `convention_cards`
 - `card_templates`
 - `share_links`
+- `activity_events`
 
 It also enables row-level security and adds ownership policies.
 

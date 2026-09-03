@@ -56,6 +56,7 @@ export type RequestPasswordResetInput = {
 };
 
 export type ChangePasswordInput = {
+  playerId: string;
   authUserId: string;
   email: string;
   currentPassword: string;

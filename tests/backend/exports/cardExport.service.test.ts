@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
+import type { ActivityWriter } from "../../../backend/src/activity/index.js";
 import type { CardService } from "../../../backend/src/cards/index.js";
 import type { ConventionCard } from "../../../backend/src/cards/card.types.js";
 import { createCardExportService } from "../../../backend/src/exports/index.js";
@@ -78,14 +79,22 @@ function createValidationService(valid = true): CardValidationService {
   };
 }
 
+function createActivityWriter(): ActivityWriter {
+  return {
+    recordEvent: vi.fn(),
+  };
+}
+
 describe("card export service", () => {
   it("builds a print-ready export payload for an active owned card", async () => {
     const card = buildCard();
     const cards = createCardService(ok(card));
     const validation = createValidationService();
+    const activity = createActivityWriter();
     const service = createCardExportService({
       cards,
       validation,
+      activity,
       now: () => new Date("2026-09-03T08:00:00.000Z"),
     });
 
@@ -96,6 +105,18 @@ describe("card export service", () => {
 
     expect(cards.getMyCard).toHaveBeenCalledWith("card-1", "player-1");
     expect(validation.validateForActivation).toHaveBeenCalledWith(card);
+    expect(activity.recordEvent).toHaveBeenCalledWith({
+      eventType: "card.exported",
+      actorPlayerId: "player-1",
+      entityType: "card",
+      entityId: "card-1",
+      cardId: "card-1",
+      partnershipId: "partnership-1",
+      metadata: {
+        format: "json",
+        generatedAt: "2026-09-03T08:00:00.000Z",
+      },
+    });
     expect(result.data).toEqual({
       export: {
         kind: "wbf-convention-card",

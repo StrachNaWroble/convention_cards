@@ -11,5 +11,6 @@ Expected core entities:
 - `convention_cards`
 - `card_templates`
 - `share_links`
+- `activity_events`
 
 Incomplete cards should be persisted as drafts. Activation, sharing, and official export should depend on validation and partner approval rather than on whether the draft can be saved.

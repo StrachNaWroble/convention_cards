@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
+import type { ActivityWriter } from "../../../backend/src/activity/index.js";
 import { createAuthService } from "../../../backend/src/auth/auth.service.js";
 import type { AuthProvider } from "../../../backend/src/auth/auth.types.js";
 import type { PlayerRepository } from "../../../backend/src/players/player.repository.js";
@@ -116,6 +117,12 @@ function createWbfVerificationService(status: "found" | "not_found" | "unavailab
   };
 }
 
+function createActivityWriter(): ActivityWriter {
+  return {
+    recordEvent: vi.fn(),
+  };
+}
+
 describe("auth service", () => {
   it("registers a player with normalized WBF number and email", async () => {
     const repository = createPlayerRepository();
@@ -218,9 +225,11 @@ describe("auth service", () => {
     const player = buildPlayer();
     const repository = createPlayerRepository([player]);
     const authProvider = createAuthProvider();
+    const activity = createActivityWriter();
     const service = createAuthService({
       players: repository,
       authProvider,
+      activity,
       now: () => loginTime,
     });
 
@@ -232,6 +241,12 @@ describe("auth service", () => {
     expect(result.ok).toBe(true);
     expect(authProvider.signInWithEmailPassword).toHaveBeenCalledWith("player@example.com", "safe-password");
     expect(player.lastLoginAt).toEqual(loginTime);
+    expect(activity.recordEvent).toHaveBeenCalledWith({
+      eventType: "player.logged_in",
+      actorPlayerId: "player-1",
+      entityType: "player",
+      entityId: "player-1",
+    });
   });
 
   it("does not reveal whether an unknown WBF number exists during login", async () => {
@@ -287,6 +302,7 @@ describe("auth service", () => {
     const service = createAuthService({ players: repository, authProvider });
 
     const result = await service.changePassword({
+      playerId: "player-1",
       authUserId: "auth-user-1",
       email: "player@example.com",
       currentPassword: "safe-password",
@@ -305,6 +321,7 @@ describe("auth service", () => {
     const service = createAuthService({ players: repository, authProvider });
 
     const result = await service.changePassword({
+      playerId: "player-1",
       authUserId: "auth-user-1",
       email: "player@example.com",
       currentPassword: "wrong-password",

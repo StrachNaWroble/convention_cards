@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
+import { createActivityRoutes } from "./routes/activity.routes.js";
 import { createAuthRoutes } from "./routes/auth.routes.js";
 import { createCardRoutes } from "./routes/card.routes.js";
 import { createPartnershipRoutes } from "./routes/partnership.routes.js";
@@ -19,6 +20,7 @@ export function createApp(services: ApiServices): Hono<ApiBindings> {
     return context.json({ status: "ok" });
   });
 
+  app.route("/activity", createActivityRoutes(services));
   app.route("/auth", createAuthRoutes(services));
   app.route("/cards", createCardRoutes(services));
   app.route("/partnerships", createPartnershipRoutes(services));
