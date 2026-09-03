@@ -6,8 +6,21 @@ import { createAuthMiddleware } from "./auth.middleware.js";
 import { parseJsonBody } from "./requestValidation.js";
 import { jsonError, jsonOk } from "./responses.js";
 import { createShareLinkRoutes } from "./sharing.routes.js";
+import type { CardStatus } from "../cards/index.js";
 
 const cardDataSchema = z.record(z.string(), z.unknown());
+const cardStatusSchema = z.enum([
+  "draft",
+  "pending_partner_approval",
+  "partner_approved",
+  "partner_rejected",
+  "active",
+  "archived",
+]);
+
+const listCardsQuerySchema = z.object({
+  includeArchived: z.enum(["true", "false"]).optional(),
+});
 
 const createCardSchema = z.object({
   title: z.string().min(1).optional(),
@@ -29,6 +42,81 @@ const updateCardSchema = z.object({
 const rejectCardReviewSchema = z.object({
   rejectionReason: z.string().max(1000).optional(),
 });
+
+const cardHistoryQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+});
+
+function parseCardStatuses(value: string | undefined): { ok: true; statuses?: CardStatus[] } | { ok: false; message: string } {
+  if (!value) {
+    return { ok: true };
+  }
+
+  const statuses = value
+    .split(",")
+    .map((status) => status.trim())
+    .filter(Boolean);
+
+  if (statuses.length === 0) {
+    return { ok: true };
+  }
+
+  for (const status of statuses) {
+    if (!cardStatusSchema.safeParse(status).success) {
+      return { ok: false, message: `Unsupported card status filter: ${status}.` };
+    }
+  }
+
+  return { ok: true, statuses: statuses as CardStatus[] };
+}
+
+function parseListCardsQuery(
+  context: Parameters<typeof jsonError>[0],
+): { ok: true; includeArchived: boolean; statuses?: CardStatus[] } | { ok: false; response: Response } {
+  const result = listCardsQuerySchema.safeParse({
+    includeArchived: context.req.query("includeArchived"),
+  });
+
+  if (!result.success) {
+    return {
+      ok: false,
+      response: jsonError(context, 422, "VALIDATION_ERROR", result.error.issues[0]?.message ?? "Invalid query."),
+    };
+  }
+
+  const statusResult = parseCardStatuses(context.req.query("status"));
+
+  if (!statusResult.ok) {
+    return {
+      ok: false,
+      response: jsonError(context, 422, "VALIDATION_ERROR", statusResult.message),
+    };
+  }
+
+  return {
+    ok: true,
+    includeArchived: result.data.includeArchived === "true",
+    statuses: statusResult.statuses,
+  };
+}
+
+function parseCardHistoryLimit(context: Parameters<typeof jsonError>[0]): { ok: true; limit?: number } | { ok: false; response: Response } {
+  const result = cardHistoryQuerySchema.safeParse({
+    limit: context.req.query("limit"),
+  });
+
+  if (!result.success) {
+    return {
+      ok: false,
+      response: jsonError(context, 422, "VALIDATION_ERROR", result.error.issues[0]?.message ?? "Invalid query."),
+    };
+  }
+
+  return {
+    ok: true,
+    limit: result.data.limit,
+  };
+}
 
 function cardErrorResponse(context: Parameters<typeof jsonError>[0], error: string, message?: string): Response {
   if (error === "CARD_NOT_FOUND") {
@@ -53,6 +141,10 @@ function cardErrorResponse(context: Parameters<typeof jsonError>[0], error: stri
 
   if (error === "CARD_REVISION_ALREADY_EXISTS") {
     return jsonError(context, 409, error, "This rejected card already has an open draft revision.");
+  }
+
+  if (error === "CARD_VALIDATION_NOT_CONFIGURED") {
+    return jsonError(context, 500, error, message ?? "Card validation service is not configured.");
   }
 
   if (error === "CARD_NOT_READY_FOR_ACTIVATION" || error === "PARTNERSHIP_NOT_APPROVED") {
@@ -88,7 +180,16 @@ export function createCardRoutes(services: ApiServices): Hono<ApiBindings> {
 
   routes.get("/", async (context) => {
     const player = context.get("player");
-    const result = await services.cards.listMyCards(player.id);
+    const query = parseListCardsQuery(context);
+
+    if (!query.ok) {
+      return query.response;
+    }
+
+    const result = await services.cards.listMyCards(player.id, {
+      statuses: query.statuses,
+      includeArchived: query.includeArchived,
+    });
 
     if (!result.ok) {
       return cardErrorResponse(context, result.error, result.message);
@@ -165,6 +266,16 @@ export function createCardRoutes(services: ApiServices): Hono<ApiBindings> {
     return jsonOk(context, result.data);
   });
 
+  routes.get("/:cardId/validation", async (context) => {
+    const result = await services.cards.validateForActivation(context.req.param("cardId"), context.get("player").id);
+
+    if (!result.ok) {
+      return cardErrorResponse(context, result.error, result.message);
+    }
+
+    return jsonOk(context, { validation: result.data });
+  });
+
   routes.patch("/:cardId", async (context) => {
     const body = await parseJsonBody(context, updateCardSchema);
 
@@ -218,9 +329,15 @@ export function createCardRoutes(services: ApiServices): Hono<ApiBindings> {
       return jsonError(context, 500, "ACTIVITY_NOT_CONFIGURED", "Activity service is not configured.");
     }
 
+    const query = parseCardHistoryLimit(context);
+    if (!query.ok) {
+      return query.response;
+    }
+
     const result = await services.activity.listOwnedCardEvents(
       context.req.param("cardId"),
       context.get("player").id,
+      query.limit,
     );
 
     if (!result.ok) {

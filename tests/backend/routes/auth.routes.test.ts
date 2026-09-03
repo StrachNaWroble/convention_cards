@@ -84,6 +84,7 @@ function createCardService(): CardService {
     listMyCards: vi.fn(async () => ok([])),
     listCardsForPartnerReview: vi.fn(async () => ok([])),
     getMyCard: vi.fn(),
+    validateForActivation: vi.fn(async () => ok({ valid: true, issues: [] })),
     createRevisionFromRejectedCard: vi.fn(),
     autosaveDraft: vi.fn(),
     submitForPartnerApproval: vi.fn(),
@@ -98,6 +99,7 @@ function createPartnershipService(): PartnershipService {
   return {
     createPartnership: vi.fn(),
     listMyPartnerships: vi.fn(async () => ok([])),
+    getMyPartnership: vi.fn(),
     approvePartnership: vi.fn(),
     declinePartnership: vi.fn(),
     archivePartnership: vi.fn(),

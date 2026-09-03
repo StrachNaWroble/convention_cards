@@ -1,13 +1,17 @@
 import type { CardRepository } from "../cards/index.js";
 import { err, ok, type Result } from "../shared/result.js";
 import type { ActivityRepository } from "./activity.repository.js";
-import type { ActivityEvent, CreateActivityEventInput } from "./activity.types.js";
+import type { ActivityEvent, ActivityListFilters, CreateActivityEventInput } from "./activity.types.js";
 
 export type ActivityServiceError = "CARD_NOT_FOUND" | "ACTIVITY_LIST_FAILED";
 
 export type ActivityService = {
   recordEvent(input: CreateActivityEventInput): Promise<void>;
-  listMyEvents(playerId: string, limit?: number): Promise<Result<ActivityEvent[], ActivityServiceError>>;
+  listMyEvents(
+    playerId: string,
+    limit?: number,
+    filters?: ActivityListFilters,
+  ): Promise<Result<ActivityEvent[], ActivityServiceError>>;
   listOwnedCardEvents(
     cardId: string,
     ownerPlayerId: string,
@@ -52,9 +56,9 @@ export function createActivityService({
       }
     },
 
-    async listMyEvents(playerId, limit) {
+    async listMyEvents(playerId, limit, filters) {
       try {
-        return ok(await activity.listForPlayer(playerId, normalizeLimit(limit, defaultLimit, maxLimit)));
+        return ok(await activity.listForPlayer(playerId, normalizeLimit(limit, defaultLimit, maxLimit), filters));
       } catch (error) {
         return err("ACTIVITY_LIST_FAILED", error instanceof Error ? error.message : "Could not list activity events.");
       }

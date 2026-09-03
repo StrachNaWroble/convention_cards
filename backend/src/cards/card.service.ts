@@ -2,11 +2,19 @@ import type { ActivityWriter } from "../activity/index.js";
 import { err, ok, type Result } from "../shared/result.js";
 import type { PartnershipRepository } from "../partnerships/partnership.repository.js";
 import type { Player } from "../players/player.types.js";
-import type { CardValidationService } from "../validation/index.js";
+import type { CardValidationResult, CardValidationService } from "../validation/index.js";
 import type { CardRepository } from "./card.repository.js";
-import type { ConventionCard, CreateCardDraftInput, UpdateCardDraftInput } from "./card.types.js";
+import type { CardListFilters, ConventionCard, CreateCardDraftInput, UpdateCardDraftInput } from "./card.types.js";
 
 const MAX_REJECTION_REASON_LENGTH = 1000;
+
+function hasJsonChanged(previousValue: unknown, nextValue: unknown): boolean {
+  try {
+    return JSON.stringify(previousValue) !== JSON.stringify(nextValue);
+  } catch {
+    return true;
+  }
+}
 
 export type CardServiceError =
   | "CARD_NOT_FOUND"
@@ -17,14 +25,16 @@ export type CardServiceError =
   | "CARD_NOT_PENDING_REVIEW"
   | "CARD_NOT_REVISIONABLE"
   | "CARD_REVISION_ALREADY_EXISTS"
+  | "CARD_VALIDATION_NOT_CONFIGURED"
   | "PARTNERSHIP_NOT_APPROVED"
   | "REJECTION_REASON_TOO_LONG";
 
 export type CardService = {
   createBlankDraft(input: CreateCardDraftInput): Promise<Result<ConventionCard, CardServiceError>>;
-  listMyCards(ownerPlayerId: string): Promise<Result<ConventionCard[], CardServiceError>>;
+  listMyCards(ownerPlayerId: string, filters?: CardListFilters): Promise<Result<ConventionCard[], CardServiceError>>;
   listCardsForPartnerReview(player: Player): Promise<Result<ConventionCard[], CardServiceError>>;
   getMyCard(cardId: string, ownerPlayerId: string): Promise<Result<ConventionCard, CardServiceError>>;
+  validateForActivation(cardId: string, ownerPlayerId: string): Promise<Result<CardValidationResult, CardServiceError>>;
   createRevisionFromRejectedCard(cardId: string, ownerPlayerId: string): Promise<Result<ConventionCard, CardServiceError>>;
   autosaveDraft(input: UpdateCardDraftInput): Promise<Result<ConventionCard, CardServiceError>>;
   submitForPartnerApproval(cardId: string, ownerPlayerId: string): Promise<Result<ConventionCard, CardServiceError>>;
@@ -82,8 +92,8 @@ export function createCardService({
       }
     },
 
-    async listMyCards(ownerPlayerId) {
-      return ok(await cards.listByOwner(ownerPlayerId));
+    async listMyCards(ownerPlayerId, filters) {
+      return ok(await cards.listByOwner(ownerPlayerId, filters));
     },
 
     async listCardsForPartnerReview(player) {
@@ -98,6 +108,20 @@ export function createCardService({
       }
 
       return ok(card);
+    },
+
+    async validateForActivation(cardId, ownerPlayerId) {
+      const card = await cards.findOwnedCard(cardId, ownerPlayerId);
+
+      if (!card) {
+        return err("CARD_NOT_FOUND");
+      }
+
+      if (!validation) {
+        return err("CARD_VALIDATION_NOT_CONFIGURED", "Card validation service is not configured.");
+      }
+
+      return ok(validation.validateForActivation(card));
     },
 
     async createRevisionFromRejectedCard(cardId, ownerPlayerId) {
@@ -150,16 +174,35 @@ export function createCardService({
         return err("CARD_NOT_EDITABLE");
       }
 
+      const nextTitle = input.title?.trim();
+      const titleChanged = nextTitle !== undefined && nextTitle !== existingCard.title;
+      const cardDataChanged = input.cardData !== undefined && hasJsonChanged(existingCard.cardData, input.cardData);
+
       const card = await cards.updateDraft(
         {
           ...input,
-          title: input.title?.trim(),
+          title: nextTitle,
         },
         now(),
       );
 
       if (!card) {
         return err("CARD_NOT_FOUND");
+      }
+
+      if (titleChanged || cardDataChanged) {
+        await activity?.recordEvent({
+          eventType: "card.updated",
+          actorPlayerId: input.ownerPlayerId,
+          entityType: "card",
+          entityId: card.id,
+          cardId: card.id,
+          partnershipId: card.partnershipId,
+          metadata: {
+            titleChanged,
+            cardDataChanged,
+          },
+        });
       }
 
       return ok(card);

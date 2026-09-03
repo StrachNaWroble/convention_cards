@@ -1,12 +1,12 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import type { Database } from "../db/client.js";
 import { activityEvents } from "../db/schema.js";
-import type { ActivityEvent, CreateActivityEventInput } from "./activity.types.js";
+import type { ActivityEvent, ActivityListFilters, CreateActivityEventInput } from "./activity.types.js";
 
 export type ActivityRepository = {
   create(input: CreateActivityEventInput): Promise<ActivityEvent>;
-  listForPlayer(playerId: string, limit: number): Promise<ActivityEvent[]>;
+  listForPlayer(playerId: string, limit: number, filters?: ActivityListFilters): Promise<ActivityEvent[]>;
   listForCard(cardId: string, limit: number): Promise<ActivityEvent[]>;
 };
 
@@ -31,11 +31,9 @@ export function createDrizzleActivityRepository(db: Database): ActivityRepositor
       return event as ActivityEvent;
     },
 
-    async listForPlayer(playerId, limit) {
-      const events = await db
-        .select()
-        .from(activityEvents)
-        .where(sql`
+    async listForPlayer(playerId, limit, filters = {}) {
+      const conditions = [
+        sql`
           ${activityEvents.actorPlayerId} = ${playerId}
           OR EXISTS (
             SELECT 1
@@ -57,7 +55,33 @@ export function createDrizzleActivityRepository(db: Database): ActivityRepositor
                 )
               )
           )
-        `)
+        `,
+      ];
+
+      if (filters.eventTypes?.length) {
+        conditions.push(inArray(activityEvents.eventType, filters.eventTypes));
+      }
+
+      if (filters.entityTypes?.length) {
+        conditions.push(inArray(activityEvents.entityType, filters.entityTypes));
+      }
+
+      if (filters.cardId) {
+        conditions.push(eq(activityEvents.cardId, filters.cardId));
+      }
+
+      if (filters.partnershipId) {
+        conditions.push(eq(activityEvents.partnershipId, filters.partnershipId));
+      }
+
+      if (filters.shareLinkId) {
+        conditions.push(eq(activityEvents.shareLinkId, filters.shareLinkId));
+      }
+
+      const events = await db
+        .select()
+        .from(activityEvents)
+        .where(and(...conditions))
         .orderBy(desc(activityEvents.createdAt))
         .limit(limit);
 

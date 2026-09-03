@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { ActivityWriter } from "../../../backend/src/activity/index.js";
 import { createCardService } from "../../../backend/src/cards/card.service.js";
 import type { CardRepository } from "../../../backend/src/cards/card.repository.js";
-import type { CardStatus, ConventionCard, PartnerCardReviewStatus } from "../../../backend/src/cards/card.types.js";
+import type { CardListFilters, CardStatus, ConventionCard, PartnerCardReviewStatus } from "../../../backend/src/cards/card.types.js";
 import type { PartnershipRepository } from "../../../backend/src/partnerships/partnership.repository.js";
 import type { Partnership } from "../../../backend/src/partnerships/partnership.types.js";
 import type { Player } from "../../../backend/src/players/player.types.js";
@@ -103,8 +103,18 @@ function createCardRepository(seed: ConventionCard[] = []): CardRepository {
       return card;
     },
 
-    async listByOwner(ownerPlayerId) {
-      return cards.filter((card) => card.ownerPlayerId === ownerPlayerId);
+    async listByOwner(ownerPlayerId, filters: CardListFilters = {}) {
+      return cards.filter((card) => {
+        if (card.ownerPlayerId !== ownerPlayerId) {
+          return false;
+        }
+
+        if (filters.statuses?.length) {
+          return filters.statuses.includes(card.status);
+        }
+
+        return filters.includeArchived === true || card.status !== "archived";
+      });
     },
 
     async listPendingReviewForPartner(playerId, wbfNumber) {
@@ -283,11 +293,33 @@ describe("card service", () => {
     });
   });
 
+  it("lists owned cards with status filters and archived cards opt-in", async () => {
+    const repository = createCardRepository([
+      buildCard({ id: "card-1", status: "draft" }),
+      buildCard({ id: "card-2", status: "active" }),
+      buildCard({ id: "card-3", status: "archived" }),
+      buildCard({ id: "card-4", ownerPlayerId: "player-2", status: "draft" }),
+    ]);
+    const service = createCardService({ cards: repository });
+
+    const result = await service.listMyCards("player-1", {
+      statuses: ["draft", "active"],
+      includeArchived: true,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.data.map((card) => card.id)).toEqual(["card-1", "card-2"]);
+  });
+
   it("autosaves draft card data without requiring completed WBF fields", async () => {
     const saveTime = new Date("2026-09-02T12:00:00.000Z");
     const repository = createCardRepository([buildCard()]);
+    const activity = createActivityWriter();
     const service = createCardService({
       cards: repository,
+      activity,
       now: () => saveTime,
     });
 
@@ -308,6 +340,50 @@ describe("card service", () => {
     expect(result.data.title).toBe("System notes");
     expect(result.data.cardData).toEqual({ openings: { oneClub: "2+" } });
     expect(result.data.updatedAt).toEqual(saveTime);
+    expect(activity.recordEvent).toHaveBeenCalledWith({
+      eventType: "card.updated",
+      actorPlayerId: "player-1",
+      entityType: "card",
+      entityId: "card-1",
+      cardId: "card-1",
+      partnershipId: null,
+      metadata: {
+        titleChanged: true,
+        cardDataChanged: true,
+      },
+    });
+  });
+
+  it("does not record an update event for a no-op draft autosave", async () => {
+    const repository = createCardRepository([
+      buildCard({
+        title: "System notes",
+        cardData: {
+          openings: {
+            oneClub: "2+",
+          },
+        },
+      }),
+    ]);
+    const activity = createActivityWriter();
+    const service = createCardService({
+      cards: repository,
+      activity,
+    });
+
+    const result = await service.autosaveDraft({
+      cardId: "card-1",
+      ownerPlayerId: "player-1",
+      title: " System notes ",
+      cardData: {
+        openings: {
+          oneClub: "2+",
+        },
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(activity.recordEvent).not.toHaveBeenCalled();
   });
 
   it("blocks autosave once a card is no longer a draft", async () => {
@@ -325,6 +401,46 @@ describe("card service", () => {
     });
 
     expect(result).toEqual({ ok: false, error: "CARD_NOT_EDITABLE" });
+  });
+
+  it("validates an owned card before activation without changing its status", async () => {
+    const repository = createCardRepository([
+      buildCard({
+        title: "",
+        partnershipId: null,
+      }),
+    ]);
+    const service = createCardService({
+      cards: repository,
+      validation: createValidationService(false),
+    });
+
+    const result = await service.validateForActivation("card-1", "player-1");
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.data).toEqual({
+      valid: false,
+      issues: [
+        {
+          code: "CARD_DATA_SECTION_REQUIRED",
+          path: "cardData",
+          message: "Card data is required before activation.",
+        },
+      ],
+    });
+  });
+
+  it("blocks validation for cards not owned by the player", async () => {
+    const service = createCardService({
+      cards: createCardRepository([buildCard()]),
+      validation: createValidationService(),
+    });
+
+    const result = await service.validateForActivation("card-1", "player-2");
+
+    expect(result).toEqual({ ok: false, error: "CARD_NOT_FOUND" });
   });
 
   it("creates a draft revision from a rejected card", async () => {

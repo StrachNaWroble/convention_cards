@@ -68,6 +68,19 @@ export function createPartnershipRoutes(services: ApiServices): Hono<ApiBindings
     return jsonOk(context, result.data, 201);
   });
 
+  routes.get("/:partnershipId", async (context) => {
+    const result = await services.partnerships.getMyPartnership(
+      context.req.param("partnershipId"),
+      context.get("player"),
+    );
+
+    if (!result.ok) {
+      return partnershipErrorResponse(context, result.error, result.message);
+    }
+
+    return jsonOk(context, result.data);
+  });
+
   routes.post("/:partnershipId/approve", async (context) => {
     const result = await services.partnerships.approvePartnership(
       context.req.param("partnershipId"),

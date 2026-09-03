@@ -83,6 +83,7 @@ function createCardService(): CardService {
     listMyCards: vi.fn(async () => ok([])),
     listCardsForPartnerReview: vi.fn(async () => ok([])),
     getMyCard: vi.fn(),
+    validateForActivation: vi.fn(async () => ok({ valid: true, issues: [] })),
     createRevisionFromRejectedCard: vi.fn(),
     autosaveDraft: vi.fn(),
     submitForPartnerApproval: vi.fn(),
@@ -97,6 +98,7 @@ function createPartnershipService(): PartnershipService {
   return {
     createPartnership: vi.fn(),
     listMyPartnerships: vi.fn(async () => ok([])),
+    getMyPartnership: vi.fn(),
     approvePartnership: vi.fn(),
     declinePartnership: vi.fn(),
     archivePartnership: vi.fn(),
@@ -165,7 +167,13 @@ describe("activity routes", () => {
     });
 
     expect(response.status).toBe(200);
-    expect(activity.listMyEvents).toHaveBeenCalledWith("player-1", 10);
+    expect(activity.listMyEvents).toHaveBeenCalledWith("player-1", 10, {
+      cardId: undefined,
+      entityTypes: undefined,
+      eventTypes: undefined,
+      partnershipId: undefined,
+      shareLinkId: undefined,
+    });
     expect(await response.json()).toMatchObject({
       data: {
         events: [
@@ -179,6 +187,41 @@ describe("activity routes", () => {
     });
   });
 
+  it("passes activity filters to the service", async () => {
+    const { activity, app } = createTestApp();
+
+    const response = await app.request(
+      "/activity?limit=20&eventType=card.created,card.updated&entityType=card&cardId=card-1",
+      {
+        headers: {
+          authorization: "Bearer access-token",
+        },
+      },
+    );
+
+    expect(response.status).toBe(200);
+    expect(activity.listMyEvents).toHaveBeenCalledWith("player-1", 20, {
+      cardId: "card-1",
+      entityTypes: ["card"],
+      eventTypes: ["card.created", "card.updated"],
+      partnershipId: undefined,
+      shareLinkId: undefined,
+    });
+  });
+
+  it("rejects unsupported activity filters", async () => {
+    const { activity, app } = createTestApp();
+
+    const response = await app.request("/activity?eventType=card.deleted", {
+      headers: {
+        authorization: "Bearer access-token",
+      },
+    });
+
+    expect(response.status).toBe(422);
+    expect(activity.listMyEvents).not.toHaveBeenCalled();
+  });
+
   it("requires authentication for activity", async () => {
     const { app } = createTestApp();
 
@@ -190,14 +233,14 @@ describe("activity routes", () => {
   it("lists history for an owned card", async () => {
     const { activity, app } = createTestApp();
 
-    const response = await app.request("/cards/card-1/history", {
+    const response = await app.request("/cards/card-1/history?limit=25", {
       headers: {
         authorization: "Bearer access-token",
       },
     });
 
     expect(response.status).toBe(200);
-    expect(activity.listOwnedCardEvents).toHaveBeenCalledWith("card-1", "player-1");
+    expect(activity.listOwnedCardEvents).toHaveBeenCalledWith("card-1", "player-1", 25);
     expect(await response.json()).toMatchObject({
       data: {
         events: [

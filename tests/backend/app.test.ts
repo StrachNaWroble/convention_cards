@@ -60,6 +60,7 @@ function createCardService(): CardService {
     listMyCards: vi.fn(async () => ok([])),
     listCardsForPartnerReview: vi.fn(async () => ok([])),
     getMyCard: vi.fn(),
+    validateForActivation: vi.fn(async () => ok({ valid: true, issues: [] })),
     createRevisionFromRejectedCard: vi.fn(),
     autosaveDraft: vi.fn(),
     submitForPartnerApproval: vi.fn(),
@@ -74,6 +75,7 @@ function createPartnershipService(): PartnershipService {
   return {
     createPartnership: vi.fn(),
     listMyPartnerships: vi.fn(async () => ok([])),
+    getMyPartnership: vi.fn(),
     approvePartnership: vi.fn(),
     declinePartnership: vi.fn(),
     archivePartnership: vi.fn(),
@@ -265,6 +267,7 @@ describe("app CORS", () => {
     expect(response.headers.get("Access-Control-Allow-Origin")).toBe("https://app.example.com");
     expect(response.headers.get("Access-Control-Allow-Headers")).toBe("Authorization,Content-Type,X-Request-Id");
     expect(response.headers.get("Access-Control-Allow-Methods")).toContain("POST");
+    expect(response.headers.get("Access-Control-Allow-Methods")).not.toContain("DELETE");
     expect(response.headers.get("Access-Control-Max-Age")).toBe("300");
   });
 });

@@ -85,6 +85,7 @@ function createCardService(card = buildCard()): CardService {
     listMyCards: vi.fn(async () => ok([card])),
     listCardsForPartnerReview: vi.fn(async () => ok([buildCard({ status: "pending_partner_approval" })])),
     getMyCard: vi.fn(async () => ok(card)),
+    validateForActivation: vi.fn(async () => ok({ valid: true, issues: [] })),
     createRevisionFromRejectedCard: vi.fn(async () =>
       ok(buildCard({ ...card, id: "card-2", sourceCardId: card.id, revisionNumber: card.revisionNumber + 1 })),
     ),
@@ -137,6 +138,7 @@ function createPartnershipService(): PartnershipService {
   return {
     createPartnership: vi.fn(),
     listMyPartnerships: vi.fn(async () => ok([])),
+    getMyPartnership: vi.fn(),
     approvePartnership: vi.fn(),
     declinePartnership: vi.fn(),
     archivePartnership: vi.fn(),
@@ -247,7 +249,59 @@ describe("card routes", () => {
     });
 
     expect(response.status).toBe(200);
-    expect(cards.listMyCards).toHaveBeenCalledWith("player-1");
+    expect(cards.listMyCards).toHaveBeenCalledWith("player-1", {
+      includeArchived: false,
+      statuses: undefined,
+    });
+  });
+
+  it("passes card list filters to the card service", async () => {
+    const cards = createCardService();
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards,
+      partnerships: createPartnershipService(),
+      playerProfiles: createPlayerProfileService(),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/cards?status=draft,active&includeArchived=true", {
+      headers: {
+        authorization: "Bearer access-token",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(cards.listMyCards).toHaveBeenCalledWith("player-1", {
+      includeArchived: true,
+      statuses: ["draft", "active"],
+    });
+  });
+
+  it("rejects unsupported card list status filters", async () => {
+    const cards = createCardService();
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards,
+      partnerships: createPartnershipService(),
+      playerProfiles: createPlayerProfileService(),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/cards?status=deleted", {
+      headers: {
+        authorization: "Bearer access-token",
+      },
+    });
+
+    expect(response.status).toBe(422);
+    expect(cards.listMyCards).not.toHaveBeenCalled();
   });
 
   it("creates a blank draft for the signed-in player", async () => {
@@ -358,6 +412,55 @@ describe("card routes", () => {
       error: {
         code: "CARD_NOT_EDITABLE",
         message: "This card cannot be edited in its current status.",
+      },
+    });
+  });
+
+  it("returns validation issues for an owned card", async () => {
+    const cards = createCardService();
+    vi.mocked(cards.validateForActivation).mockResolvedValueOnce(
+      ok({
+        valid: false,
+        issues: [
+          {
+            code: "CARD_PARTNERSHIP_REQUIRED",
+            path: "partnershipId",
+            message: "Card must be linked to a partnership before activation.",
+          },
+        ],
+      }),
+    );
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards,
+      partnerships: createPartnershipService(),
+      playerProfiles: createPlayerProfileService(),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/cards/card-1/validation", {
+      headers: {
+        authorization: "Bearer access-token",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(cards.validateForActivation).toHaveBeenCalledWith("card-1", "player-1");
+    expect(await response.json()).toEqual({
+      data: {
+        validation: {
+          valid: false,
+          issues: [
+            {
+              code: "CARD_PARTNERSHIP_REQUIRED",
+              path: "partnershipId",
+              message: "Card must be linked to a partnership before activation.",
+            },
+          ],
+        },
       },
     });
   });
@@ -630,6 +733,42 @@ describe("card routes", () => {
     expect(await response.json()).toMatchObject({
       data: {
         token: "raw-share-token",
+      },
+    });
+  });
+
+  it("maps past share-link expiry to a validation response", async () => {
+    const sharing = createSharingService();
+    vi.mocked(sharing.createShareLink).mockResolvedValueOnce(
+      err("SHARE_LINK_EXPIRY_IN_PAST", "Share link expiry must be in the future."),
+    );
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards: createCardService(),
+      partnerships: createPartnershipService(),
+      playerProfiles: createPlayerProfileService(),
+      sharing,
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/cards/card-1/share-links", {
+      method: "POST",
+      body: JSON.stringify({
+        expiresAt: "2026-09-02T11:59:59.000Z",
+      }),
+      headers: {
+        authorization: "Bearer access-token",
+        "content-type": "application/json",
+      },
+    });
+
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({
+      error: {
+        code: "SHARE_LINK_EXPIRY_IN_PAST",
+        message: "Share link expiry must be in the future.",
       },
     });
   });

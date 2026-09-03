@@ -238,6 +238,29 @@ describe("sharing service", () => {
     expect(result).toEqual({ ok: false, error: "PARTNERSHIP_NOT_APPROVED" });
   });
 
+  it("blocks share links that would expire immediately", async () => {
+    const sharing = createSharingRepository();
+    const service = createSharingService({
+      cards: createCardRepository([buildCard()]),
+      partnerships: createPartnershipRepository([buildPartnership()]),
+      sharing,
+      now: () => new Date("2026-09-02T12:00:00.000Z"),
+    });
+
+    const result = await service.createShareLink({
+      cardId: "card-1",
+      ownerPlayerId: "player-1",
+      expiresAt: new Date("2026-09-02T11:59:59.000Z"),
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      error: "SHARE_LINK_EXPIRY_IN_PAST",
+      message: "Share link expiry must be in the future.",
+    });
+    expect(sharing.createdInputs).toHaveLength(0);
+  });
+
   it("revokes a share link owned by the player", async () => {
     const revokedAt = new Date("2026-09-02T12:00:00.000Z");
     const service = createSharingService({

@@ -44,3 +44,8 @@ export type UpdateCardDraftInput = {
   title?: string;
   cardData?: ConventionCardData;
 };
+
+export type CardListFilters = {
+  statuses?: CardStatus[];
+  includeArchived?: boolean;
+};

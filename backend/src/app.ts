@@ -48,7 +48,7 @@ export function createApp(services: ApiServices, options: AppOptions = {}): Hono
     "*",
     cors({
       origin: createCorsOriginMatcher(corsConfig.allowedOrigins),
-      allowMethods: ["GET", "HEAD", "POST", "PATCH", "DELETE", "OPTIONS"],
+      allowMethods: ["GET", "HEAD", "POST", "PATCH", "OPTIONS"],
       allowHeaders: ["Authorization", "Content-Type", "X-Request-Id"],
       exposeHeaders: ["RateLimit-Limit", "RateLimit-Remaining", "RateLimit-Reset", "Retry-After", "X-Request-Id"],
       credentials: corsConfig.allowCredentials,

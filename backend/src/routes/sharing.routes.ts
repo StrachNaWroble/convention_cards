@@ -19,6 +19,10 @@ function sharingErrorResponse(context: Parameters<typeof jsonError>[0], error: s
     return jsonError(context, 409, error, message ?? "This card cannot be shared yet.");
   }
 
+  if (error === "SHARE_LINK_EXPIRY_IN_PAST") {
+    return jsonError(context, 422, error, message ?? "Share link expiry must be in the future.");
+  }
+
   return jsonError(context, 400, error, message ?? "Could not process sharing request.");
 }
 
