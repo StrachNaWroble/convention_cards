@@ -3,7 +3,7 @@ import { loginSchema, LoginFormData } from '../../../schemas/auth';
 import { z } from 'zod';
 
 interface LoginFormProps {
-  onSubmit?: (data: LoginFormData) => void;
+  onSubmit?: (data: LoginFormData, rememberMe: boolean) => void;
   isLoading?: boolean;
   onNavigateToRegister?: () => void;
 }
@@ -13,12 +13,18 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading = fals
     wbfNumber: '',
     password: '',
   });
+  const [rememberMe, setRememberMe] = useState(false);
 
   const [errors, setErrors] = useState<Partial<Record<keyof LoginFormData, string>>>({});
   const [authError, setAuthError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
+    if (type === 'checkbox') {
+      setRememberMe(checked);
+      return;
+    }
+    
     setFormData((prev) => ({ ...prev, [name]: value }));
     // Czyszczenie błędów przy wpisywaniu
     if (errors[name as keyof LoginFormData]) {
@@ -34,7 +40,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading = fals
       const validData = loginSchema.parse(formData);
       setErrors({});
       if (onSubmit) {
-        onSubmit(validData);
+        onSubmit(validData, rememberMe);
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -118,8 +124,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading = fals
           <div className="flex items-center">
             <input
               id="remember-me"
-              name="remember-me"
+              name="rememberMe"
               type="checkbox"
+              checked={rememberMe}
+              onChange={handleChange}
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-600 rounded bg-white/10"
             />
             <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-300">

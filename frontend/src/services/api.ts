@@ -31,7 +31,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 
   // W tym miejscu w przyszłości można dodawać token z localStorage/stanu
-  const token = localStorage.getItem('token');
+  const token = sessionStorage.getItem('token') || localStorage.getItem('token');
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }

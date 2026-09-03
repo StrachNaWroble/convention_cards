@@ -54,6 +54,7 @@ export const authApi = {
    */
   logout: async (): Promise<{ signedOut: boolean }> => {
     localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
     return api.post<{ signedOut: boolean }>('/auth/logout', {});
   },
 
