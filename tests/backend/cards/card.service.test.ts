@@ -286,8 +286,10 @@ describe("card service", () => {
   it("autosaves draft card data without requiring completed WBF fields", async () => {
     const saveTime = new Date("2026-09-02T12:00:00.000Z");
     const repository = createCardRepository([buildCard()]);
+    const activity = createActivityWriter();
     const service = createCardService({
       cards: repository,
+      activity,
       now: () => saveTime,
     });
 
@@ -308,6 +310,50 @@ describe("card service", () => {
     expect(result.data.title).toBe("System notes");
     expect(result.data.cardData).toEqual({ openings: { oneClub: "2+" } });
     expect(result.data.updatedAt).toEqual(saveTime);
+    expect(activity.recordEvent).toHaveBeenCalledWith({
+      eventType: "card.updated",
+      actorPlayerId: "player-1",
+      entityType: "card",
+      entityId: "card-1",
+      cardId: "card-1",
+      partnershipId: null,
+      metadata: {
+        titleChanged: true,
+        cardDataChanged: true,
+      },
+    });
+  });
+
+  it("does not record an update event for a no-op draft autosave", async () => {
+    const repository = createCardRepository([
+      buildCard({
+        title: "System notes",
+        cardData: {
+          openings: {
+            oneClub: "2+",
+          },
+        },
+      }),
+    ]);
+    const activity = createActivityWriter();
+    const service = createCardService({
+      cards: repository,
+      activity,
+    });
+
+    const result = await service.autosaveDraft({
+      cardId: "card-1",
+      ownerPlayerId: "player-1",
+      title: " System notes ",
+      cardData: {
+        openings: {
+          oneClub: "2+",
+        },
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(activity.recordEvent).not.toHaveBeenCalled();
   });
 
   it("blocks autosave once a card is no longer a draft", async () => {

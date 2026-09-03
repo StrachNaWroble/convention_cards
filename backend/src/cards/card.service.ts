@@ -8,6 +8,14 @@ import type { ConventionCard, CreateCardDraftInput, UpdateCardDraftInput } from 
 
 const MAX_REJECTION_REASON_LENGTH = 1000;
 
+function hasJsonChanged(previousValue: unknown, nextValue: unknown): boolean {
+  try {
+    return JSON.stringify(previousValue) !== JSON.stringify(nextValue);
+  } catch {
+    return true;
+  }
+}
+
 export type CardServiceError =
   | "CARD_NOT_FOUND"
   | "CARD_NOT_EDITABLE"
@@ -150,16 +158,35 @@ export function createCardService({
         return err("CARD_NOT_EDITABLE");
       }
 
+      const nextTitle = input.title?.trim();
+      const titleChanged = nextTitle !== undefined && nextTitle !== existingCard.title;
+      const cardDataChanged = input.cardData !== undefined && hasJsonChanged(existingCard.cardData, input.cardData);
+
       const card = await cards.updateDraft(
         {
           ...input,
-          title: input.title?.trim(),
+          title: nextTitle,
         },
         now(),
       );
 
       if (!card) {
         return err("CARD_NOT_FOUND");
+      }
+
+      if (titleChanged || cardDataChanged) {
+        await activity?.recordEvent({
+          eventType: "card.updated",
+          actorPlayerId: input.ownerPlayerId,
+          entityType: "card",
+          entityId: card.id,
+          cardId: card.id,
+          partnershipId: card.partnershipId,
+          metadata: {
+            titleChanged,
+            cardDataChanged,
+          },
+        });
       }
 
       return ok(card);

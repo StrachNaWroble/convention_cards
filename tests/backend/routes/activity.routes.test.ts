@@ -190,14 +190,14 @@ describe("activity routes", () => {
   it("lists history for an owned card", async () => {
     const { activity, app } = createTestApp();
 
-    const response = await app.request("/cards/card-1/history", {
+    const response = await app.request("/cards/card-1/history?limit=25", {
       headers: {
         authorization: "Bearer access-token",
       },
     });
 
     expect(response.status).toBe(200);
-    expect(activity.listOwnedCardEvents).toHaveBeenCalledWith("card-1", "player-1");
+    expect(activity.listOwnedCardEvents).toHaveBeenCalledWith("card-1", "player-1", 25);
     expect(await response.json()).toMatchObject({
       data: {
         events: [

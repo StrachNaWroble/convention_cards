@@ -30,6 +30,28 @@ const rejectCardReviewSchema = z.object({
   rejectionReason: z.string().max(1000).optional(),
 });
 
+const cardHistoryQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+});
+
+function parseCardHistoryLimit(context: Parameters<typeof jsonError>[0]): { ok: true; limit?: number } | { ok: false; response: Response } {
+  const result = cardHistoryQuerySchema.safeParse({
+    limit: context.req.query("limit"),
+  });
+
+  if (!result.success) {
+    return {
+      ok: false,
+      response: jsonError(context, 422, "VALIDATION_ERROR", result.error.issues[0]?.message ?? "Invalid query."),
+    };
+  }
+
+  return {
+    ok: true,
+    limit: result.data.limit,
+  };
+}
+
 function cardErrorResponse(context: Parameters<typeof jsonError>[0], error: string, message?: string): Response {
   if (error === "CARD_NOT_FOUND") {
     return jsonError(context, 404, error, "Card was not found.");
@@ -218,9 +240,15 @@ export function createCardRoutes(services: ApiServices): Hono<ApiBindings> {
       return jsonError(context, 500, "ACTIVITY_NOT_CONFIGURED", "Activity service is not configured.");
     }
 
+    const query = parseCardHistoryLimit(context);
+    if (!query.ok) {
+      return query.response;
+    }
+
     const result = await services.activity.listOwnedCardEvents(
       context.req.param("cardId"),
       context.get("player").id,
+      query.limit,
     );
 
     if (!result.ok) {

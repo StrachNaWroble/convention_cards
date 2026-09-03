@@ -9,6 +9,7 @@ export type ActivityEventType =
   | "partnership.archived"
   | "card.created"
   | "card.revision_created"
+  | "card.updated"
   | "card.submitted_for_approval"
   | "card.approved_by_partner"
   | "card.rejected_by_partner"
