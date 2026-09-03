@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
+import type { AppCorsConfig } from "./config/cors.js";
 import { createActivityRoutes } from "./routes/activity.routes.js";
 import { createAuthRoutes } from "./routes/auth.routes.js";
 import { createCardRoutes } from "./routes/card.routes.js";
@@ -11,10 +12,41 @@ import { createTemplateRoutes } from "./routes/template.routes.js";
 import { createWbfVerificationRoutes } from "./routes/wbfVerification.routes.js";
 import type { ApiBindings, ApiServices } from "./routes/index.js";
 
-export function createApp(services: ApiServices): Hono<ApiBindings> {
-  const app = new Hono<ApiBindings>();
+export type AppOptions = {
+  cors?: AppCorsConfig;
+};
 
-  app.use("*", cors());
+const defaultCorsConfig: AppCorsConfig = {
+  allowedOrigins: ["*"],
+  allowCredentials: false,
+  maxAgeSeconds: 600,
+};
+
+function createCorsOriginMatcher(allowedOrigins: string[]) {
+  if (allowedOrigins.includes("*")) {
+    return "*";
+  }
+
+  const allowedOriginSet = new Set(allowedOrigins);
+
+  return (origin: string) => (allowedOriginSet.has(origin) ? origin : null);
+}
+
+export function createApp(services: ApiServices, options: AppOptions = {}): Hono<ApiBindings> {
+  const app = new Hono<ApiBindings>();
+  const corsConfig = options.cors ?? defaultCorsConfig;
+
+  app.use(
+    "*",
+    cors({
+      origin: createCorsOriginMatcher(corsConfig.allowedOrigins),
+      allowMethods: ["GET", "HEAD", "POST", "PATCH", "DELETE", "OPTIONS"],
+      allowHeaders: ["Authorization", "Content-Type"],
+      exposeHeaders: ["RateLimit-Limit", "RateLimit-Remaining", "RateLimit-Reset", "Retry-After"],
+      credentials: corsConfig.allowCredentials,
+      maxAge: corsConfig.maxAgeSeconds,
+    }),
+  );
 
   app.get("/health", (context) => {
     return context.json({ status: "ok" });

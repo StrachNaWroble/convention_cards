@@ -64,3 +64,19 @@ When a player logs in, they enter WBF number and password. The server looks up t
 Backend services can use the Drizzle client with `DATABASE_URL`.
 
 Frontend code should not use the direct database URL. Browser code should call backend API routes or use Supabase client APIs that are protected by row-level security.
+
+## 5. CORS
+
+CORS controls which browser origins can read backend responses from frontend JavaScript. It does not replace authentication.
+
+For local development, leaving `CORS_ALLOWED_ORIGINS` unset allows any origin. For production, set it to the deployed frontend origin, for example:
+
+```text
+CORS_ALLOWED_ORIGINS=https://your-frontend.example.com
+```
+
+If you need both local and deployed frontends:
+
+```text
+CORS_ALLOWED_ORIGINS=http://localhost:5173,https://your-frontend.example.com
+```

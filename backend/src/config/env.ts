@@ -1,3 +1,5 @@
+import { loadCorsConfig, type AppCorsConfig } from "./cors.js";
+
 export type AppEnv = {
   databaseUrl: string;
   supabaseUrl: string;
