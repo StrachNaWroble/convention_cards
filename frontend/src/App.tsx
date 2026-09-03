@@ -3,6 +3,7 @@ import { LoginView } from './app/LoginView';
 import { RegisterView } from './app/RegisterView';
 import { DashboardView } from './app/DashboardView';
 import { authApi } from './features/auth/services/auth.api';
+import { ApiError } from './services/api';
 
 export const App: React.FC = () => {
   const [view, setView] = useState<'login' | 'register' | 'dashboard'>('login');
@@ -16,9 +17,11 @@ export const App: React.FC = () => {
           await authApi.getMe();
           setView('dashboard');
         } catch (error) {
-          console.error("Invalid session", error);
-          localStorage.removeItem('token');
-          sessionStorage.removeItem('token');
+          console.error("Session validation failed", error);
+          if (error instanceof ApiError && error.status === 401) {
+            localStorage.removeItem('token');
+            sessionStorage.removeItem('token');
+          }
         }
       }
       setIsInitializing(false);
