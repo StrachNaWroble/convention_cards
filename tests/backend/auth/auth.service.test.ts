@@ -93,6 +93,8 @@ function createAuthProvider(): AuthProvider {
         expiresAt: 1_788_349_200,
       }),
     ),
+    sendPasswordResetEmail: vi.fn(async () => ok(undefined)),
+    updatePassword: vi.fn(async () => ok(undefined)),
     getUserByAccessToken: vi.fn(async () => ok({ id: "auth-user-1", email: "player@example.com" })),
     signOut: vi.fn(async () => ok(undefined)),
   };
@@ -244,5 +246,72 @@ describe("auth service", () => {
 
     expect(result).toEqual({ ok: false, error: "INVALID_CREDENTIALS" });
     expect(authProvider.signInWithEmailPassword).not.toHaveBeenCalled();
+  });
+
+  it("requests a password reset using the email linked to a WBF number", async () => {
+    const repository = createPlayerRepository([buildPlayer()]);
+    const authProvider = createAuthProvider();
+    const service = createAuthService({
+      players: repository,
+      authProvider,
+      passwordResetRedirectTo: "https://app.example.com/reset-password",
+    });
+
+    const result = await service.requestPasswordReset({
+      wbfNumber: " 123456 ",
+    });
+
+    expect(result).toEqual({ ok: true, data: { resetEmailQueued: true } });
+    expect(authProvider.sendPasswordResetEmail).toHaveBeenCalledWith(
+      "player@example.com",
+      "https://app.example.com/reset-password",
+    );
+  });
+
+  it("does not reveal whether a password reset WBF number exists", async () => {
+    const repository = createPlayerRepository();
+    const authProvider = createAuthProvider();
+    const service = createAuthService({ players: repository, authProvider });
+
+    const result = await service.requestPasswordReset({
+      wbfNumber: "999999",
+    });
+
+    expect(result).toEqual({ ok: true, data: { resetEmailQueued: true } });
+    expect(authProvider.sendPasswordResetEmail).not.toHaveBeenCalled();
+  });
+
+  it("changes a password after confirming the current password", async () => {
+    const repository = createPlayerRepository();
+    const authProvider = createAuthProvider();
+    const service = createAuthService({ players: repository, authProvider });
+
+    const result = await service.changePassword({
+      authUserId: "auth-user-1",
+      email: "player@example.com",
+      currentPassword: "safe-password",
+      newPassword: "new-safe-password",
+    });
+
+    expect(result).toEqual({ ok: true, data: { passwordChanged: true } });
+    expect(authProvider.signInWithEmailPassword).toHaveBeenCalledWith("player@example.com", "safe-password");
+    expect(authProvider.updatePassword).toHaveBeenCalledWith("auth-user-1", "new-safe-password");
+  });
+
+  it("rejects password changes when the current password is wrong", async () => {
+    const repository = createPlayerRepository();
+    const authProvider = createAuthProvider();
+    vi.mocked(authProvider.signInWithEmailPassword).mockResolvedValueOnce({ ok: false, error: "AUTH_INVALID_CREDENTIALS" });
+    const service = createAuthService({ players: repository, authProvider });
+
+    const result = await service.changePassword({
+      authUserId: "auth-user-1",
+      email: "player@example.com",
+      currentPassword: "wrong-password",
+      newPassword: "new-safe-password",
+    });
+
+    expect(result).toEqual({ ok: false, error: "INVALID_CREDENTIALS" });
+    expect(authProvider.updatePassword).not.toHaveBeenCalled();
   });
 });

@@ -11,6 +11,7 @@ Create a Supabase project and copy these values into `.env`:
 - `SUPABASE_ANON_KEY`: public browser/server auth key.
 - `SUPABASE_SERVICE_ROLE_KEY`: private server-only key.
 - `REQUIRE_WBF_VERIFICATION`: optional. Set to `true` in stricter environments to block registration when WBF verification is unavailable.
+- `PASSWORD_RESET_REDIRECT_TO`: optional. Supabase password reset emails can redirect users to this URL.
 
 Keep `SUPABASE_SERVICE_ROLE_KEY` out of frontend code.
 

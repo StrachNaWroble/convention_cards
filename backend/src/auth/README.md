@@ -13,4 +13,8 @@ The login flow is:
 
 Session refresh uses the Supabase refresh token through `POST /auth/refresh`.
 
+Players can request a password reset with their WBF number through `POST /auth/password-reset`. The backend looks up the stored email and asks Supabase to send the reset email. Unknown WBF numbers still receive a successful response so the API does not reveal whether a player account exists.
+
+Signed-in players can change their password through `PATCH /auth/password`. The backend first confirms the current password against Supabase, then updates the Supabase auth user.
+
 Registration can be made strict with `REQUIRE_WBF_VERIFICATION=true`. In that mode, registration is blocked unless the WBF verification adapter confirms the submitted WBF number.

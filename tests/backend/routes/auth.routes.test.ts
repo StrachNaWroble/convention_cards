@@ -43,6 +43,8 @@ function createAuthProvider(): AuthProvider {
         expiresAt: 1_788_349_200,
       }),
     ),
+    sendPasswordResetEmail: vi.fn(async () => ok(undefined)),
+    updatePassword: vi.fn(async () => ok(undefined)),
     getUserByAccessToken: vi.fn(async () => ok({ id: "auth-user-1", email: "player@example.com" })),
     signOut: vi.fn(async () => ok(undefined)),
   };
@@ -69,6 +71,8 @@ function createAuthService(player = buildPlayer()): AuthService {
         },
       }),
     ),
+    requestPasswordReset: vi.fn(async () => ok({ resetEmailQueued: true as const })),
+    changePassword: vi.fn(async () => ok({ passwordChanged: true as const })),
     getCurrentPlayer: vi.fn(async () => ok(player)),
   };
 }
@@ -301,6 +305,110 @@ describe("auth routes", () => {
       error: {
         code: "AUTH_REFRESH_FAILED",
         message: "Invalid or expired refresh token.",
+      },
+    });
+  });
+
+  it("requests a password reset using a WBF number", async () => {
+    const auth = createAuthService();
+    const app = createApp({
+      auth,
+      authProvider: createAuthProvider(),
+      cards: createCardService(),
+      partnerships: createPartnershipService(),
+      playerProfiles: createPlayerProfileService(),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/auth/password-reset", {
+      method: "POST",
+      body: JSON.stringify({ wbfNumber: "123456" }),
+      headers: {
+        "content-type": "application/json",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(auth.requestPasswordReset).toHaveBeenCalledWith({ wbfNumber: "123456" });
+    expect(await response.json()).toEqual({
+      data: {
+        resetEmailQueued: true,
+      },
+    });
+  });
+
+  it("changes the current player's password", async () => {
+    const auth = createAuthService();
+    const app = createApp({
+      auth,
+      authProvider: createAuthProvider(),
+      cards: createCardService(),
+      partnerships: createPartnershipService(),
+      playerProfiles: createPlayerProfileService(),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/auth/password", {
+      method: "PATCH",
+      body: JSON.stringify({
+        currentPassword: "safe-password",
+        newPassword: "new-safe-password",
+      }),
+      headers: {
+        authorization: "Bearer access-token",
+        "content-type": "application/json",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(auth.changePassword).toHaveBeenCalledWith({
+      authUserId: "auth-user-1",
+      email: "player@example.com",
+      currentPassword: "safe-password",
+      newPassword: "new-safe-password",
+    });
+    expect(await response.json()).toEqual({
+      data: {
+        passwordChanged: true,
+      },
+    });
+  });
+
+  it("rejects password changes when the current password is wrong", async () => {
+    const auth = createAuthService();
+    vi.mocked(auth.changePassword).mockResolvedValueOnce(err("INVALID_CREDENTIALS"));
+    const app = createApp({
+      auth,
+      authProvider: createAuthProvider(),
+      cards: createCardService(),
+      partnerships: createPartnershipService(),
+      playerProfiles: createPlayerProfileService(),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/auth/password", {
+      method: "PATCH",
+      body: JSON.stringify({
+        currentPassword: "wrong-password",
+        newPassword: "new-safe-password",
+      }),
+      headers: {
+        authorization: "Bearer access-token",
+        "content-type": "application/json",
+      },
+    });
+
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({
+      error: {
+        code: "INVALID_CREDENTIALS",
+        message: "Current password is incorrect.",
       },
     });
   });

@@ -36,6 +36,8 @@ function createAuthProvider(): AuthProvider {
     registerWithEmailPassword: vi.fn(),
     signInWithEmailPassword: vi.fn(),
     refreshSession: vi.fn(),
+    sendPasswordResetEmail: vi.fn(async () => ok(undefined)),
+    updatePassword: vi.fn(async () => ok(undefined)),
     getUserByAccessToken: vi.fn(async () => ok({ id: "auth-user-1", email: "player@example.com" })),
     signOut: vi.fn(async () => ok(undefined)),
   };
@@ -45,6 +47,8 @@ function createAuthService(player = buildPlayer()): AuthService {
   return {
     registerPlayerAccount: vi.fn(),
     loginWithWbfNumber: vi.fn(),
+    requestPasswordReset: vi.fn(),
+    changePassword: vi.fn(),
     getCurrentPlayer: vi.fn(async () => ok(player)),
   };
 }

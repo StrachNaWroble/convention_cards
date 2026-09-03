@@ -4,6 +4,7 @@ export type AppEnv = {
   supabaseAnonKey: string;
   supabaseServiceRoleKey?: string;
   requireWbfVerification: boolean;
+  passwordResetRedirectTo?: string;
 };
 
 type EnvSource = Record<string, string | undefined>;
@@ -25,5 +26,6 @@ export function loadAppEnv(source: EnvSource = process.env): AppEnv {
     supabaseAnonKey: requireEnv(source, "SUPABASE_ANON_KEY"),
     supabaseServiceRoleKey: source.SUPABASE_SERVICE_ROLE_KEY,
     requireWbfVerification: source.REQUIRE_WBF_VERIFICATION === "true",
+    passwordResetRedirectTo: source.PASSWORD_RESET_REDIRECT_TO,
   };
 }

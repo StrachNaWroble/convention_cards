@@ -20,4 +20,11 @@ describe("environment config", () => {
   it("enables strict WBF verification when configured", () => {
     expect(loadAppEnv(buildEnv({ REQUIRE_WBF_VERIFICATION: "true" })).requireWbfVerification).toBe(true);
   });
+
+  it("loads the optional password reset redirect URL", () => {
+    expect(
+      loadAppEnv(buildEnv({ PASSWORD_RESET_REDIRECT_TO: "https://app.example.com/reset-password" }))
+        .passwordResetRedirectTo,
+    ).toBe("https://app.example.com/reset-password");
+  });
 });

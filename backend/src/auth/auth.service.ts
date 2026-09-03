@@ -4,10 +4,14 @@ import { err, ok, type Result } from "../shared/result.js";
 import type { WbfVerificationService } from "../wbf-verification/index.js";
 import type {
   AuthProvider,
+  ChangePasswordInput,
+  ChangePasswordResult,
   LoginWithWbfNumberInput,
   LoginWithWbfNumberResult,
   RegisterPlayerInput,
   RegisterPlayerResult,
+  RequestPasswordResetInput,
+  RequestPasswordResetResult,
 } from "./auth.types.js";
 
 export type AuthServiceError =
@@ -22,6 +26,8 @@ export type AuthServiceError =
 export type AuthService = {
   registerPlayerAccount(input: RegisterPlayerInput): Promise<Result<RegisterPlayerResult, AuthServiceError>>;
   loginWithWbfNumber(input: LoginWithWbfNumberInput): Promise<Result<LoginWithWbfNumberResult, AuthServiceError>>;
+  requestPasswordReset(input: RequestPasswordResetInput): Promise<Result<RequestPasswordResetResult, AuthServiceError>>;
+  changePassword(input: ChangePasswordInput): Promise<Result<ChangePasswordResult, AuthServiceError>>;
   getCurrentPlayer(authUserId: string): Promise<Result<LoginWithWbfNumberResult["player"], "PLAYER_NOT_FOUND">>;
 };
 
@@ -30,6 +36,7 @@ type AuthServiceDeps = {
   authProvider: AuthProvider;
   wbfVerification?: WbfVerificationService;
   requireWbfVerification?: boolean;
+  passwordResetRedirectTo?: string;
   now?: () => Date;
 };
 
@@ -38,6 +45,7 @@ export function createAuthService({
   authProvider,
   wbfVerification,
   requireWbfVerification = false,
+  passwordResetRedirectTo,
   now = () => new Date(),
 }: AuthServiceDeps): AuthService {
   return {
@@ -104,6 +112,39 @@ export function createAuthService({
       await players.markLogin(player.authUserId, now());
 
       return ok({ player, session: session.data });
+    },
+
+    async requestPasswordReset(input) {
+      const wbfNumber = normalizeWbfNumber(input.wbfNumber);
+      const player = await players.findByWbfNumber(wbfNumber);
+
+      if (!player) {
+        return ok({ resetEmailQueued: true });
+      }
+
+      const reset = await authProvider.sendPasswordResetEmail(player.email, passwordResetRedirectTo);
+
+      if (!reset.ok) {
+        return err("AUTH_PROVIDER_ERROR", reset.message);
+      }
+
+      return ok({ resetEmailQueued: true });
+    },
+
+    async changePassword(input) {
+      const currentPassword = await authProvider.signInWithEmailPassword(input.email, input.currentPassword);
+
+      if (!currentPassword.ok) {
+        return err("INVALID_CREDENTIALS");
+      }
+
+      const updatedPassword = await authProvider.updatePassword(input.authUserId, input.newPassword);
+
+      if (!updatedPassword.ok) {
+        return err("AUTH_PROVIDER_ERROR", updatedPassword.message);
+      }
+
+      return ok({ passwordChanged: true });
     },
 
     async getCurrentPlayer(authUserId) {
