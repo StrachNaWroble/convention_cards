@@ -19,6 +19,9 @@ export const LoginView: React.FC<LoginViewProps> = ({ onNavigateToRegister, onLo
     
     try {
       const result = await authApi.login(data);
+      if (result.session?.accessToken) {
+        localStorage.setItem('token', result.session.accessToken);
+      }
       if (onLoginSuccess) {
         onLoginSuccess();
       }

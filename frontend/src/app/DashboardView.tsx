@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CardsList } from '../features/cards/components/CardsList';
+import { CardView } from '../features/cards/components/CardView';
 import { authApi } from '../features/auth/services/auth.api';
 
 interface DashboardViewProps {
@@ -7,7 +8,8 @@ interface DashboardViewProps {
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({ onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'cards' | 'partnerships' | 'settings'>('cards');
+  const [activeTab, setActiveTab] = useState<'cards' | 'card_details' | 'partnerships' | 'settings'>('cards');
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
@@ -20,6 +22,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onLogout }) => {
       setIsLoggingOut(false);
       onLogout();
     }
+  };
+
+  const handleViewCard = (cardId: string) => {
+    setSelectedCardId(cardId);
+    setActiveTab('card_details');
+  };
+
+  const handleBackToCards = () => {
+    setSelectedCardId(null);
+    setActiveTab('cards');
   };
 
   return (
@@ -48,7 +60,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onLogout }) => {
           <button
             onClick={() => setActiveTab('cards')}
             className={`w-full flex items-center px-4 py-3 rounded-xl transition-all duration-200 ${
-              activeTab === 'cards'
+              activeTab === 'cards' || activeTab === 'card_details'
                 ? 'bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 shadow-inner'
                 : 'text-gray-400 hover:text-gray-200 hover:bg-white/5 border border-transparent'
             }`}
@@ -109,6 +121,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onLogout }) => {
         <header className="h-20 px-8 flex items-center justify-between border-b border-white/5 bg-white/[0.01] backdrop-blur-sm">
           <h1 className="text-xl font-medium text-gray-200">
             {activeTab === 'cards' && 'My Convention Cards'}
+            {activeTab === 'card_details' && 'Card Details'}
             {activeTab === 'partnerships' && 'Partnerships'}
             {activeTab === 'settings' && 'Account Settings'}
           </h1>
@@ -119,7 +132,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onLogout }) => {
 
         <main className="flex-1 overflow-y-auto p-8">
           <div className="max-w-6xl mx-auto">
-            {activeTab === 'cards' && <CardsList />}
+            {activeTab === 'cards' && <CardsList onViewCard={handleViewCard} />}
+            {activeTab === 'card_details' && selectedCardId && (
+              <CardView cardId={selectedCardId} onBack={handleBackToCards} />
+            )}
             {activeTab === 'partnerships' && (
               <div className="text-center py-20 text-gray-400">
                 Partnerships view coming soon...

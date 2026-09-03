@@ -22,8 +22,9 @@ export interface RegisterResponse {
 export interface LoginResponse {
   player: Player;
   session: {
-    access_token: string;
-    refresh_token: string;
+    accessToken: string;
+    refreshToken: string;
+    expiresAt?: number;
   };
 }
 
@@ -52,6 +53,7 @@ export const authApi = {
    * Wylogowuje użytkownika
    */
   logout: async (): Promise<{ signedOut: boolean }> => {
+    localStorage.removeItem('token');
     return api.post<{ signedOut: boolean }>('/auth/logout', {});
   },
 
