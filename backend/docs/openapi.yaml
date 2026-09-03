@@ -1,0 +1,1314 @@
+openapi: 3.1.0
+info:
+  title: Convention Cards Backend API
+  version: 0.1.0
+  description: Backend HTTP API for WBF-number login, player profiles, partnerships, convention cards, sharing, exports, and activity history.
+servers:
+  - url: http://localhost:3000
+    description: Local API server
+security:
+  - bearerAuth: []
+tags:
+  - name: Health
+  - name: Auth
+  - name: WBF Verification
+  - name: Cards
+  - name: Partnerships
+  - name: Players
+  - name: Templates
+  - name: Sharing
+  - name: Activity
+paths:
+  /health:
+    get:
+      tags: [Health]
+      security: []
+      summary: Check server health.
+      responses:
+        "200":
+          description: Server is running.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    const: ok
+  /auth/register:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Create a player account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterPlayerRequest"
+      responses:
+        "201":
+          description: Account created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegisterPlayerResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /auth/login:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Sign in with WBF number and password.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Refresh a Supabase session.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        "200":
+          description: Session refreshed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /auth/password-reset:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Queue a password reset email by WBF number.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [wbfNumber]
+              properties:
+                wbfNumber:
+                  type: string
+      responses:
+        "200":
+          description: Reset email queued.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PasswordResetResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /auth/password:
+    patch:
+      tags: [Auth]
+      summary: Change the signed-in player's password.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword:
+                  type: string
+                newPassword:
+                  type: string
+                  minLength: 8
+      responses:
+        "200":
+          description: Password changed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PasswordChangedResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Sign out the current bearer token.
+      responses:
+        "200":
+          description: Signed out.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [signedOut]
+                    properties:
+                      signedOut:
+                        type: boolean
+                        const: true
+        default:
+          $ref: "#/components/responses/Error"
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Load the current player from the bearer token.
+      responses:
+        "200":
+          description: Current player.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /wbf-verification/verify:
+    post:
+      tags: [WBF Verification]
+      security: []
+      summary: Verify a WBF number through the configured adapter.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [wbfNumber]
+              properties:
+                wbfNumber:
+                  type: string
+      responses:
+        "200":
+          description: Verification result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WbfVerificationResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /players/me:
+    get:
+      tags: [Players]
+      summary: Load the signed-in player's profile.
+      responses:
+        "200":
+          description: Player profile.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerResponse"
+        default:
+          $ref: "#/components/responses/Error"
+    patch:
+      tags: [Players]
+      summary: Update editable profile fields.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayName:
+                  type: [string, "null"]
+                  maxLength: 120
+                countryOrNbo:
+                  type: [string, "null"]
+                  maxLength: 80
+      responses:
+        "200":
+          description: Updated player profile.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlayerResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /cards:
+    get:
+      tags: [Cards]
+      summary: List convention cards owned by the signed-in player.
+      parameters:
+        - name: status
+          in: query
+          description: "Comma-separated card statuses. Example: draft,active."
+          schema:
+            type: string
+        - name: includeArchived
+          in: query
+          description: Include archived cards when no status filter is supplied.
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Owned cards.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [cards]
+                    properties:
+                      cards:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ConventionCard"
+        default:
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [Cards]
+      summary: Create a blank draft card.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCardRequest"
+      responses:
+        "201":
+          description: Draft created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /cards/from-template:
+    post:
+      tags: [Cards]
+      summary: Create a draft card from a template.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [templateSlug]
+              properties:
+                templateSlug:
+                  type: string
+                title:
+                  type: string
+                partnershipId:
+                  type: [string, "null"]
+                  format: uuid
+      responses:
+        "201":
+          description: Draft created from template.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /cards/reviews/pending:
+    get:
+      tags: [Cards]
+      summary: List cards waiting for the signed-in partner's review.
+      responses:
+        "200":
+          description: Pending partner review cards.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [cards]
+                    properties:
+                      cards:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ConventionCard"
+        default:
+          $ref: "#/components/responses/Error"
+  /cards/{cardId}:
+    parameters:
+      - $ref: "#/components/parameters/CardId"
+    get:
+      tags: [Cards]
+      summary: Load one owned card.
+      responses:
+        "200":
+          description: Owned card.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardResponse"
+        default:
+          $ref: "#/components/responses/Error"
+    patch:
+      tags: [Cards]
+      summary: Autosave editable draft fields.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCardRequest"
+      responses:
+        "200":
+          description: Draft updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /cards/{cardId}/validation:
+    parameters:
+      - $ref: "#/components/parameters/CardId"
+    get:
+      tags: [Cards]
+      summary: Validate an owned card for activation without changing it.
+      responses:
+        "200":
+          description: Activation validation result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardValidationResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /cards/{cardId}/revisions:
+    parameters:
+      - $ref: "#/components/parameters/CardId"
+    post:
+      tags: [Cards]
+      summary: Create a draft revision from a rejected card.
+      responses:
+        "201":
+          description: Revision created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /cards/{cardId}/submit-for-approval:
+    parameters:
+      - $ref: "#/components/parameters/CardId"
+    post:
+      tags: [Cards]
+      summary: Submit a draft for partner approval.
+      responses:
+        "200":
+          description: Card submitted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /cards/{cardId}/review/approve:
+    parameters:
+      - $ref: "#/components/parameters/CardId"
+    post:
+      tags: [Cards]
+      summary: Approve a submitted card as the invited partner.
+      responses:
+        "200":
+          description: Card approved.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /cards/{cardId}/review/reject:
+    parameters:
+      - $ref: "#/components/parameters/CardId"
+    post:
+      tags: [Cards]
+      summary: Reject a submitted card as the invited partner.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rejectionReason:
+                  type: string
+                  maxLength: 1000
+      responses:
+        "200":
+          description: Card rejected.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /cards/{cardId}/activate:
+    parameters:
+      - $ref: "#/components/parameters/CardId"
+    post:
+      tags: [Cards]
+      summary: Activate a partner-approved card after validation.
+      responses:
+        "200":
+          description: Card activated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /cards/{cardId}/archive:
+    parameters:
+      - $ref: "#/components/parameters/CardId"
+    post:
+      tags: [Cards]
+      summary: Archive a card using soft delete.
+      responses:
+        "200":
+          description: Card archived.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /cards/{cardId}/export:
+    parameters:
+      - $ref: "#/components/parameters/CardId"
+    get:
+      tags: [Cards]
+      summary: Build a print-ready JSON export payload.
+      responses:
+        "200":
+          description: Export payload.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardExportResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /cards/{cardId}/history:
+    parameters:
+      - $ref: "#/components/parameters/CardId"
+      - $ref: "#/components/parameters/Limit"
+    get:
+      tags: [Cards]
+      summary: List recent activity events for an owned card.
+      responses:
+        "200":
+          description: Card activity events.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityListResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /cards/{cardId}/share-links:
+    parameters:
+      - $ref: "#/components/parameters/CardId"
+    get:
+      tags: [Sharing]
+      summary: List share links for an owned card.
+      responses:
+        "200":
+          description: Share links.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareLinkListResponse"
+        default:
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [Sharing]
+      summary: Create a public read-only share link for an active card.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expiresAt:
+                  type: string
+                  format: date-time
+      responses:
+        "201":
+          description: Share link created. The raw token is returned only once.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateShareLinkResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /share-links/{shareLinkId}/revoke:
+    parameters:
+      - name: shareLinkId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Sharing]
+      summary: Revoke an owned share link.
+      responses:
+        "200":
+          description: Share link revoked.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareLinkResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /shared/cards/{token}:
+    parameters:
+      - name: token
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Sharing]
+      security: []
+      summary: Publicly load an active shared card by raw share token.
+      responses:
+        "200":
+          description: Shared card.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicSharedCardResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /partnerships:
+    get:
+      tags: [Partnerships]
+      summary: List partnerships for the signed-in player.
+      responses:
+        "200":
+          description: Partnerships.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnershipListResponse"
+        default:
+          $ref: "#/components/responses/Error"
+    post:
+      tags: [Partnerships]
+      summary: Create a pending partnership by partner WBF number.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [partnerWbfNumber]
+              properties:
+                partnerWbfNumber:
+                  type: string
+      responses:
+        "201":
+          description: Partnership created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnershipResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /partnerships/{partnershipId}:
+    parameters:
+      - $ref: "#/components/parameters/PartnershipId"
+    get:
+      tags: [Partnerships]
+      summary: Load a partnership visible to the signed-in player.
+      responses:
+        "200":
+          description: Partnership.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnershipResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /partnerships/{partnershipId}/approve:
+    parameters:
+      - $ref: "#/components/parameters/PartnershipId"
+    post:
+      tags: [Partnerships]
+      summary: Approve an invitation as the partner.
+      responses:
+        "200":
+          description: Partnership approved.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnershipResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /partnerships/{partnershipId}/decline:
+    parameters:
+      - $ref: "#/components/parameters/PartnershipId"
+    post:
+      tags: [Partnerships]
+      summary: Decline an invitation as the partner.
+      responses:
+        "200":
+          description: Partnership declined.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnershipResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /partnerships/{partnershipId}/archive:
+    parameters:
+      - $ref: "#/components/parameters/PartnershipId"
+    post:
+      tags: [Partnerships]
+      summary: Archive a partnership visible to the signed-in player.
+      responses:
+        "200":
+          description: Partnership archived.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnershipResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /templates:
+    get:
+      tags: [Templates]
+      security: []
+      summary: List system card templates.
+      responses:
+        "200":
+          description: Templates.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateListResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /templates/{slug}:
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Templates]
+      security: []
+      summary: Load one template by slug.
+      responses:
+        "200":
+          description: Template.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TemplateResponse"
+        default:
+          $ref: "#/components/responses/Error"
+  /activity:
+    get:
+      tags: [Activity]
+      summary: List recent activity events related to the signed-in player.
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - name: eventType
+          in: query
+          description: "Comma-separated activity event types. Example: card.created,card.updated."
+          schema:
+            type: string
+        - name: entityType
+          in: query
+          description: "Comma-separated entity types. Example: card,partnership."
+          schema:
+            type: string
+        - name: cardId
+          in: query
+          schema:
+            type: string
+        - name: partnershipId
+          in: query
+          schema:
+            type: string
+        - name: shareLinkId
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Activity events.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivityListResponse"
+        default:
+          $ref: "#/components/responses/Error"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: Supabase access token
+  parameters:
+    CardId:
+      name: cardId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PartnershipId:
+      name: partnershipId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+  responses:
+    Error:
+      description: Error response.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+    AuthSession:
+      type: object
+      required: [accessToken, refreshToken]
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresAt:
+          type: integer
+    Player:
+      type: object
+      required: [id, authUserId, wbfNumber, email, displayName, countryOrNbo, verificationStatus, verificationSource, verificationCheckedAt, lastLoginAt, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        authUserId:
+          type: string
+          format: uuid
+        wbfNumber:
+          type: string
+        email:
+          type: string
+          format: email
+        displayName:
+          type: [string, "null"]
+        countryOrNbo:
+          type: [string, "null"]
+        verificationStatus:
+          $ref: "#/components/schemas/VerificationStatus"
+        verificationSource:
+          type: [string, "null"]
+        verificationCheckedAt:
+          type: [string, "null"]
+          format: date-time
+        lastLoginAt:
+          type: [string, "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    VerificationStatus:
+      type: string
+      enum: [pending, verified, unverified, failed]
+    CardStatus:
+      type: string
+      enum: [draft, pending_partner_approval, partner_approved, partner_rejected, active, archived]
+    PartnershipStatus:
+      type: string
+      enum: [pending, approved, declined, archived]
+    ConventionCardData:
+      type: object
+      additionalProperties: true
+    ConventionCard:
+      type: object
+      required: [id, ownerPlayerId, partnershipId, sourceCardId, revisionNumber, title, status, cardData, submittedAt, partnerReviewedByPlayerId, partnerReviewedAt, partnerRejectionReason, activatedAt, archivedAt, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        ownerPlayerId:
+          type: string
+          format: uuid
+        partnershipId:
+          type: [string, "null"]
+          format: uuid
+        sourceCardId:
+          type: [string, "null"]
+          format: uuid
+        revisionNumber:
+          type: integer
+        title:
+          type: string
+        status:
+          $ref: "#/components/schemas/CardStatus"
+        cardData:
+          $ref: "#/components/schemas/ConventionCardData"
+        submittedAt:
+          type: [string, "null"]
+          format: date-time
+        partnerReviewedByPlayerId:
+          type: [string, "null"]
+          format: uuid
+        partnerReviewedAt:
+          type: [string, "null"]
+          format: date-time
+        partnerRejectionReason:
+          type: [string, "null"]
+        activatedAt:
+          type: [string, "null"]
+          format: date-time
+        archivedAt:
+          type: [string, "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Partnership:
+      type: object
+      required: [id, ownerPlayerId, partnerPlayerId, partnerWbfNumber, status, approvedAt, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        ownerPlayerId:
+          type: string
+          format: uuid
+        partnerPlayerId:
+          type: [string, "null"]
+          format: uuid
+        partnerWbfNumber:
+          type: string
+        status:
+          $ref: "#/components/schemas/PartnershipStatus"
+        approvedAt:
+          type: [string, "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ActivityEvent:
+      type: object
+      required: [id, eventType, actorPlayerId, entityType, entityId, cardId, partnershipId, shareLinkId, metadata, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        eventType:
+          type: string
+        actorPlayerId:
+          type: [string, "null"]
+          format: uuid
+        entityType:
+          type: string
+          enum: [player, partnership, card, share_link]
+        entityId:
+          type: [string, "null"]
+        cardId:
+          type: [string, "null"]
+          format: uuid
+        partnershipId:
+          type: [string, "null"]
+          format: uuid
+        shareLinkId:
+          type: [string, "null"]
+          format: uuid
+        metadata:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+    ShareLink:
+      type: object
+      required: [id, cardId, expiresAt, revokedAt, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        cardId:
+          type: string
+          format: uuid
+        expiresAt:
+          type: [string, "null"]
+          format: date-time
+        revokedAt:
+          type: [string, "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    CardTemplate:
+      type: object
+      required: [id, slug, name, description, cardData, isSystemTemplate, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        name:
+          type: string
+        description:
+          type: [string, "null"]
+        cardData:
+          $ref: "#/components/schemas/ConventionCardData"
+        isSystemTemplate:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CardValidationIssue:
+      type: object
+      required: [code, path, message]
+      properties:
+        code:
+          type: string
+        path:
+          type: string
+        message:
+          type: string
+    RegisterPlayerRequest:
+      type: object
+      required: [wbfNumber, email, password]
+      properties:
+        wbfNumber:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        displayName:
+          type: string
+        countryOrNbo:
+          type: string
+    LoginRequest:
+      type: object
+      required: [wbfNumber, password]
+      properties:
+        wbfNumber:
+          type: string
+        password:
+          type: string
+    CreateCardRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        partnershipId:
+          type: [string, "null"]
+          format: uuid
+        cardData:
+          $ref: "#/components/schemas/ConventionCardData"
+    UpdateCardRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        cardData:
+          $ref: "#/components/schemas/ConventionCardData"
+    RegisterPlayerResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [player, authUser]
+          properties:
+            player:
+              $ref: "#/components/schemas/Player"
+            authUser:
+              type: object
+              required: [id, email]
+              properties:
+                id:
+                  type: string
+                email:
+                  type: string
+                  format: email
+    LoginResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [player, session]
+          properties:
+            player:
+              $ref: "#/components/schemas/Player"
+            session:
+              $ref: "#/components/schemas/AuthSession"
+    SessionResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [session]
+          properties:
+            session:
+              $ref: "#/components/schemas/AuthSession"
+    PasswordResetResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [resetEmailQueued]
+          properties:
+            resetEmailQueued:
+              type: boolean
+              const: true
+    PasswordChangedResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [passwordChanged]
+          properties:
+            passwordChanged:
+              type: boolean
+              const: true
+    PlayerResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [player]
+          properties:
+            player:
+              $ref: "#/components/schemas/Player"
+    CardResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/ConventionCard"
+    CardValidationResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [validation]
+          properties:
+            validation:
+              type: object
+              required: [valid, issues]
+              properties:
+                valid:
+                  type: boolean
+                issues:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/CardValidationIssue"
+    CardExportResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          additionalProperties: true
+    PartnershipResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/Partnership"
+    PartnershipListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [partnerships]
+          properties:
+            partnerships:
+              type: array
+              items:
+                $ref: "#/components/schemas/Partnership"
+    TemplateResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/CardTemplate"
+    TemplateListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [templates]
+          properties:
+            templates:
+              type: array
+              items:
+                $ref: "#/components/schemas/CardTemplate"
+    ShareLinkResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: "#/components/schemas/ShareLink"
+    ShareLinkListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [shareLinks]
+          properties:
+            shareLinks:
+              type: array
+              items:
+                $ref: "#/components/schemas/ShareLink"
+    CreateShareLinkResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [link, token]
+          properties:
+            link:
+              $ref: "#/components/schemas/ShareLink"
+            token:
+              type: string
+    PublicSharedCardResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [card, players, shareLink]
+          properties:
+            card:
+              type: object
+              required: [id, title, status, cardData, updatedAt]
+              properties:
+                id:
+                  type: string
+                title:
+                  type: string
+                status:
+                  type: string
+                  const: active
+                cardData:
+                  $ref: "#/components/schemas/ConventionCardData"
+                updatedAt:
+                  type: string
+                  format: date-time
+            players:
+              type: object
+              additionalProperties: true
+            shareLink:
+              type: object
+              additionalProperties: true
+    ActivityListResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [events]
+          properties:
+            events:
+              type: array
+              items:
+                $ref: "#/components/schemas/ActivityEvent"
+    WbfVerificationResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [status, wbfNumber, checkedAt, confidence]
+          properties:
+            status:
+              type: string
+              enum: [verified, unverified, unavailable]
+            wbfNumber:
+              type: string
+            checkedAt:
+              type: string
+              format: date-time
+            confidence:
+              type: string
+              enum: [high, medium, low]
+            source:
+              type: string
+            displayName:
+              type: string
+            countryOrNbo:
+              type: string

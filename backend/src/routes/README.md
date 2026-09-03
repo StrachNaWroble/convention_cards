@@ -2,6 +2,10 @@
 
 HTTP route definitions live here. Keep route handlers thin: parse requests, call the relevant domain service, and return a clear response.
 
+The OpenAPI contract for the implemented backend routes is maintained in
+[`backend/docs/openapi.yaml`](../../docs/openapi.yaml). Update it in the same
+branch as API route changes.
+
 Expected route groups:
 
 - `auth`: login, logout, password setup/change, session refresh.
