@@ -5,6 +5,7 @@ import type { AuthService } from "../../../backend/src/auth/auth.service.js";
 import type { AuthProvider } from "../../../backend/src/auth/auth.types.js";
 import type { CardService } from "../../../backend/src/cards/card.service.js";
 import type { ConventionCard } from "../../../backend/src/cards/card.types.js";
+import type { CardExportService } from "../../../backend/src/exports/index.js";
 import type { PartnershipService } from "../../../backend/src/partnerships/partnership.service.js";
 import type { PlayerProfileService } from "../../../backend/src/players/playerProfile.service.js";
 import type { Player } from "../../../backend/src/players/player.types.js";
@@ -95,6 +96,40 @@ function createCardService(card = buildCard()): CardService {
     ),
     activateCard: vi.fn(async () => ok(buildCard({ ...card, status: "active" }))),
     archiveCard: vi.fn(async () => ok(buildCard({ ...card, status: "archived" }))),
+  };
+}
+
+function createExportService(): CardExportService {
+  return {
+    prepareOwnedCardExport: vi.fn(async () =>
+      ok({
+        export: {
+          kind: "wbf-convention-card" as const,
+          format: "json" as const,
+          version: 1 as const,
+          generatedAt: "2026-09-03T08:00:00.000Z",
+        },
+        layout: {
+          profile: "wbf-two-page" as const,
+          pageCount: 2 as const,
+        },
+        owner: {
+          playerId: "player-1",
+          wbfNumber: "123456",
+          displayName: "Test Player",
+          countryOrNbo: null,
+        },
+        card: {
+          id: "card-1",
+          title: "Untitled card",
+          revisionNumber: 1,
+          status: "active",
+          cardData: { openings: { oneClub: "2+" } },
+          activatedAt: new Date("2026-09-02T10:00:00.000Z"),
+          updatedAt: new Date("2026-09-02T10:00:00.000Z"),
+        },
+      }),
+    ),
   };
 }
 
@@ -484,6 +519,84 @@ describe("card routes", () => {
 
     expect(response.status).toBe(200);
     expect(cards.activateCard).toHaveBeenCalledWith("card-1", "player-1");
+  });
+
+  it("returns a print-ready export payload for an owned card", async () => {
+    const exports = createExportService();
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards: createCardService(),
+      exports,
+      partnerships: createPartnershipService(),
+      playerProfiles: createPlayerProfileService(),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/cards/card-1/export", {
+      headers: {
+        authorization: "Bearer access-token",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(exports.prepareOwnedCardExport).toHaveBeenCalledWith("card-1", buildPlayer());
+    expect(await response.json()).toMatchObject({
+      data: {
+        export: {
+          kind: "wbf-convention-card",
+          format: "json",
+          version: 1,
+        },
+        layout: {
+          profile: "wbf-two-page",
+          pageCount: 2,
+        },
+        owner: {
+          playerId: "player-1",
+          wbfNumber: "123456",
+        },
+        card: {
+          id: "card-1",
+          status: "active",
+          cardData: { openings: { oneClub: "2+" } },
+        },
+      },
+    });
+  });
+
+  it("maps non-exportable cards to a conflict response", async () => {
+    const exports = createExportService();
+    vi.mocked(exports.prepareOwnedCardExport).mockResolvedValueOnce(
+      err("CARD_NOT_EXPORTABLE", "Only active convention cards can be exported."),
+    );
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards: createCardService(),
+      exports,
+      partnerships: createPartnershipService(),
+      playerProfiles: createPlayerProfileService(),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/cards/card-1/export", {
+      headers: {
+        authorization: "Bearer access-token",
+      },
+    });
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      error: {
+        code: "CARD_NOT_EXPORTABLE",
+        message: "Only active convention cards can be exported.",
+      },
+    });
   });
 
   it("creates a share link for an owned card", async () => {

@@ -66,6 +66,18 @@ function cardErrorResponse(context: Parameters<typeof jsonError>[0], error: stri
   return jsonError(context, 400, error, message ?? "Could not process card request.");
 }
 
+function cardExportErrorResponse(context: Parameters<typeof jsonError>[0], error: string, message?: string): Response {
+  if (error === "CARD_NOT_FOUND") {
+    return jsonError(context, 404, error, "Card was not found.");
+  }
+
+  if (error === "CARD_NOT_EXPORTABLE" || error === "CARD_NOT_READY_FOR_EXPORT") {
+    return jsonError(context, 409, error, message ?? "This card is not ready for export.");
+  }
+
+  return jsonError(context, 400, error, message ?? "Could not export card.");
+}
+
 export function createCardRoutes(services: ApiServices): Hono<ApiBindings> {
   const routes = new Hono<ApiBindings>();
   const requireAuth = createAuthMiddleware(services);
@@ -185,6 +197,20 @@ export function createCardRoutes(services: ApiServices): Hono<ApiBindings> {
     }
 
     return jsonOk(context, result.data, 201);
+  });
+
+  routes.get("/:cardId/export", async (context) => {
+    if (!services.exports) {
+      return jsonError(context, 500, "EXPORTS_NOT_CONFIGURED", "Card export service is not configured.");
+    }
+
+    const result = await services.exports.prepareOwnedCardExport(context.req.param("cardId"), context.get("player"));
+
+    if (!result.ok) {
+      return cardExportErrorResponse(context, result.error, result.message);
+    }
+
+    return jsonOk(context, result.data);
   });
 
   routes.post("/:cardId/submit-for-approval", async (context) => {
