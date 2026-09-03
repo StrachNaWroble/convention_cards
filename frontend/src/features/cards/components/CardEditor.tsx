@@ -6,6 +6,7 @@ import { PageOneForm } from './editor/PageOneForm';
 interface CardEditorProps {
   cardId: string;
   onBack: () => void;
+  autoPrint?: boolean;
 }
 
 const OPENING_BIDS = [
@@ -32,12 +33,12 @@ const OPENING_BIDS = [
   { bid: 'HighLevel', label: 'High Level Bidding' }
 ];
 
-export const CardEditor: React.FC<CardEditorProps> = ({ cardId, onBack }) => {
+export const CardEditor: React.FC<CardEditorProps> = ({ cardId, onBack, autoPrint }) => {
   const [card, setCard] = useState<ConventionCard | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  const hasPrinted = useRef(false);
   const activeInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -66,6 +67,14 @@ export const CardEditor: React.FC<CardEditorProps> = ({ cardId, onBack }) => {
     document.addEventListener('focusin', handleFocusIn);
     return () => document.removeEventListener('focusin', handleFocusIn);
   }, []);
+
+  // Auto-print once after card loads (when opened via Print button in CardView)
+  useEffect(() => {
+    if (!isLoading && card && autoPrint && !hasPrinted.current) {
+      hasPrinted.current = true;
+      setTimeout(() => window.print(), 400);
+    }
+  }, [isLoading, card, autoPrint]);;
 
   const insertSymbol = (symbol: string) => {
     const el = activeInputRef.current;
@@ -181,7 +190,7 @@ export const CardEditor: React.FC<CardEditorProps> = ({ cardId, onBack }) => {
             onClick={() => window.print()}
             className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium"
           >
-            🖨️ Drukuj / PDF
+            Print / PDF
           </button>
           <button 
             onClick={handleSave}

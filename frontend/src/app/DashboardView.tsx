@@ -12,6 +12,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState<'cards' | 'card_details' | 'card_editor' | 'partnerships' | 'settings'>('cards');
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [printOnLoad, setPrintOnLoad] = useState(false);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -32,6 +33,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onLogout }) => {
 
   const handleEditCard = (cardId: string) => {
     setSelectedCardId(cardId);
+    setPrintOnLoad(false);
+    setActiveTab('card_editor');
+  };
+
+  const handlePrintCard = (cardId: string) => {
+    setSelectedCardId(cardId);
+    setPrintOnLoad(true);
     setActiveTab('card_editor');
   };
 
@@ -140,10 +148,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onLogout }) => {
           <div className="max-w-6xl mx-auto">
             {activeTab === 'cards' && <CardsList onViewCard={handleViewCard} onEditCard={handleEditCard} />}
             {activeTab === 'card_details' && selectedCardId && (
-              <CardView cardId={selectedCardId} onBack={handleBackToCards} onEdit={() => handleEditCard(selectedCardId)} />
+              <CardView
+                cardId={selectedCardId}
+                onBack={handleBackToCards}
+                onEdit={() => handleEditCard(selectedCardId)}
+                onPrint={() => handlePrintCard(selectedCardId)}
+              />
             )}
             {activeTab === 'card_editor' && selectedCardId && (
-              <CardEditor cardId={selectedCardId} onBack={() => handleViewCard(selectedCardId)} />
+              <CardEditor
+                cardId={selectedCardId}
+                onBack={() => handleViewCard(selectedCardId)}
+                autoPrint={printOnLoad}
+              />
             )}
             {activeTab === 'partnerships' && (
               <div className="text-center py-20 text-gray-400">
