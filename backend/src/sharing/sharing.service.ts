@@ -11,6 +11,7 @@ export type SharingServiceError =
   | "CARD_NOT_SHAREABLE"
   | "PARTNERSHIP_NOT_APPROVED"
   | "SHARE_LINK_NOT_FOUND"
+  | "SHARE_LINK_EXPIRY_IN_PAST"
   | "SHARE_LINK_CREATE_FAILED";
 
 export type SharingService = {
@@ -48,6 +49,12 @@ export function createSharingService({
 }: SharingServiceDeps): SharingService {
   return {
     async createShareLink(input) {
+      const currentTime = now();
+
+      if (input.expiresAt && input.expiresAt <= currentTime) {
+        return err("SHARE_LINK_EXPIRY_IN_PAST", "Share link expiry must be in the future.");
+      }
+
       const card = await cards.findOwnedCard(input.cardId, input.ownerPlayerId);
 
       if (!card) {

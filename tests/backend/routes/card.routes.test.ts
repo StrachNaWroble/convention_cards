@@ -634,6 +634,42 @@ describe("card routes", () => {
     });
   });
 
+  it("maps past share-link expiry to a validation response", async () => {
+    const sharing = createSharingService();
+    vi.mocked(sharing.createShareLink).mockResolvedValueOnce(
+      err("SHARE_LINK_EXPIRY_IN_PAST", "Share link expiry must be in the future."),
+    );
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards: createCardService(),
+      partnerships: createPartnershipService(),
+      playerProfiles: createPlayerProfileService(),
+      sharing,
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const response = await app.request("/cards/card-1/share-links", {
+      method: "POST",
+      body: JSON.stringify({
+        expiresAt: "2026-09-02T11:59:59.000Z",
+      }),
+      headers: {
+        authorization: "Bearer access-token",
+        "content-type": "application/json",
+      },
+    });
+
+    expect(response.status).toBe(422);
+    expect(await response.json()).toEqual({
+      error: {
+        code: "SHARE_LINK_EXPIRY_IN_PAST",
+        message: "Share link expiry must be in the future.",
+      },
+    });
+  });
+
   it("lists share links for an owned card", async () => {
     const sharing = createSharingService();
     const app = createApp({
