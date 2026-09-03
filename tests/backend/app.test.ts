@@ -267,6 +267,7 @@ describe("app CORS", () => {
     expect(response.headers.get("Access-Control-Allow-Origin")).toBe("https://app.example.com");
     expect(response.headers.get("Access-Control-Allow-Headers")).toBe("Authorization,Content-Type,X-Request-Id");
     expect(response.headers.get("Access-Control-Allow-Methods")).toContain("POST");
+    expect(response.headers.get("Access-Control-Allow-Methods")).not.toContain("DELETE");
     expect(response.headers.get("Access-Control-Max-Age")).toBe("300");
   });
 });
