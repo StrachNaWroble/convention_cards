@@ -7,6 +7,7 @@ import type { CardService } from "../../../backend/src/cards/card.service.js";
 import type { PartnershipService } from "../../../backend/src/partnerships/partnership.service.js";
 import type { PlayerProfileService } from "../../../backend/src/players/playerProfile.service.js";
 import type { Player } from "../../../backend/src/players/player.types.js";
+import { createAppRateLimiters, createInMemoryRateLimitStore } from "../../../backend/src/security/index.js";
 import type { SharingService } from "../../../backend/src/sharing/index.js";
 import { ok } from "../../../backend/src/shared/result.js";
 import type { TemplateService } from "../../../backend/src/templates/index.js";
@@ -140,5 +141,53 @@ describe("WBF verification routes", () => {
         playerName: "Test Player",
       },
     });
+  });
+
+  it("rate limits repeated WBF verification requests from the same client", async () => {
+    const wbfVerification: WbfVerificationService = {
+      verifyWbfNumber: vi.fn(async (wbfNumber: string) => ({
+        status: "found" as const,
+        wbfNumber,
+        playerName: "Test Player",
+        checkedAt: new Date("2026-09-02T12:00:00.000Z"),
+        confidence: "high" as const,
+      })),
+    };
+    const app = createApp({
+      auth: createAuthService(),
+      authProvider: createAuthProvider(),
+      cards: createCardService(),
+      partnerships: createPartnershipService(),
+      playerProfiles: createPlayerProfileService(),
+      rateLimits: createAppRateLimiters(
+        {
+          enabled: true,
+          windowMs: 60_000,
+          authMaxRequests: 5,
+          passwordResetMaxRequests: 5,
+          wbfVerificationMaxRequests: 1,
+        },
+        createInMemoryRateLimitStore(),
+      ),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification,
+    });
+
+    const request = {
+      method: "POST",
+      body: JSON.stringify({ wbfNumber: "123456" }),
+      headers: {
+        "content-type": "application/json",
+        "x-forwarded-for": "203.0.113.10",
+      },
+    };
+
+    const firstResponse = await app.request("/wbf-verification/verify", request);
+    const secondResponse = await app.request("/wbf-verification/verify", request);
+
+    expect(firstResponse.status).toBe(200);
+    expect(secondResponse.status).toBe(429);
+    expect(wbfVerification.verifyWbfNumber).toHaveBeenCalledTimes(1);
   });
 });

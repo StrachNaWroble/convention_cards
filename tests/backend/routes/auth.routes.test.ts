@@ -7,6 +7,7 @@ import type { CardService } from "../../../backend/src/cards/card.service.js";
 import type { PartnershipService } from "../../../backend/src/partnerships/partnership.service.js";
 import type { PlayerProfileService } from "../../../backend/src/players/playerProfile.service.js";
 import type { Player } from "../../../backend/src/players/player.types.js";
+import { createAppRateLimiters, createInMemoryRateLimitStore } from "../../../backend/src/security/index.js";
 import type { SharingService } from "../../../backend/src/sharing/index.js";
 import { err, ok } from "../../../backend/src/shared/result.js";
 import type { TemplateService } from "../../../backend/src/templates/index.js";
@@ -242,6 +243,56 @@ describe("auth routes", () => {
         },
       },
     });
+  });
+
+  it("rate limits repeated auth requests from the same client", async () => {
+    const auth = createAuthService();
+    const app = createApp({
+      auth,
+      authProvider: createAuthProvider(),
+      cards: createCardService(),
+      partnerships: createPartnershipService(),
+      playerProfiles: createPlayerProfileService(),
+      rateLimits: createAppRateLimiters(
+        {
+          enabled: true,
+          windowMs: 60_000,
+          authMaxRequests: 1,
+          passwordResetMaxRequests: 5,
+          wbfVerificationMaxRequests: 5,
+        },
+        createInMemoryRateLimitStore(),
+      ),
+      sharing: createSharingService(),
+      templates: createTemplateService(),
+      wbfVerification: createWbfVerificationService(),
+    });
+
+    const request = {
+      method: "POST",
+      body: JSON.stringify({
+        wbfNumber: "123456",
+        password: "safe-password",
+      }),
+      headers: {
+        "content-type": "application/json",
+        "x-forwarded-for": "203.0.113.10",
+      },
+    };
+
+    const firstResponse = await app.request("/auth/login", request);
+    const secondResponse = await app.request("/auth/login", request);
+
+    expect(firstResponse.status).toBe(200);
+    expect(secondResponse.status).toBe(429);
+    expect(secondResponse.headers.get("Retry-After")).toBe("60");
+    expect(await secondResponse.json()).toEqual({
+      error: {
+        code: "RATE_LIMIT_EXCEEDED",
+        message: "Too many requests. Please try again later.",
+      },
+    });
+    expect(auth.loginWithWbfNumber).toHaveBeenCalledTimes(1);
   });
 
   it("refreshes a Supabase session", async () => {

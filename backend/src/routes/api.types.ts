@@ -6,6 +6,7 @@ import type { CardExportService } from "../exports/index.js";
 import type { PartnershipService } from "../partnerships/partnership.service.js";
 import type { PlayerProfileService } from "../players/playerProfile.service.js";
 import type { Player } from "../players/player.types.js";
+import type { RateLimiters } from "../security/index.js";
 import type { SharingService } from "../sharing/index.js";
 import type { TemplateService } from "../templates/template.service.js";
 import type { WbfVerificationService } from "../wbf-verification/index.js";
@@ -18,6 +19,7 @@ export type ApiServices = {
   exports?: CardExportService;
   partnerships: PartnershipService;
   playerProfiles: PlayerProfileService;
+  rateLimits?: RateLimiters;
   sharing: SharingService;
   templates: TemplateService;
   wbfVerification: WbfVerificationService;

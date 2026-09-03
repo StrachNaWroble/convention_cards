@@ -1,10 +1,13 @@
 import { Hono } from "hono";
+import type { MiddlewareHandler } from "hono";
 import { z } from "zod";
 
 import type { ApiBindings, ApiServices } from "./api.types.js";
 import { createAuthMiddleware } from "./auth.middleware.js";
 import { parseJsonBody } from "./requestValidation.js";
 import { jsonError, jsonOk } from "./responses.js";
+
+const passThroughRateLimit: MiddlewareHandler<ApiBindings> = async (_context, next) => next();
 
 const registerSchema = z.object({
   wbfNumber: z.string().min(1, "WBF number is required."),
@@ -34,8 +37,10 @@ const changePasswordSchema = z.object({
 
 export function createAuthRoutes(services: ApiServices): Hono<ApiBindings> {
   const routes = new Hono<ApiBindings>();
+  const authRateLimit = services.rateLimits?.auth ?? passThroughRateLimit;
+  const passwordResetRateLimit = services.rateLimits?.passwordReset ?? passThroughRateLimit;
 
-  routes.post("/register", async (context) => {
+  routes.post("/register", authRateLimit, async (context) => {
     const body = await parseJsonBody(context, registerSchema);
 
     if (!body.ok) {
@@ -67,7 +72,7 @@ export function createAuthRoutes(services: ApiServices): Hono<ApiBindings> {
     return jsonOk(context, result.data, 201);
   });
 
-  routes.post("/login", async (context) => {
+  routes.post("/login", authRateLimit, async (context) => {
     const body = await parseJsonBody(context, loginSchema);
 
     if (!body.ok) {
@@ -99,7 +104,7 @@ export function createAuthRoutes(services: ApiServices): Hono<ApiBindings> {
     return jsonOk(context, { session: result.data });
   });
 
-  routes.post("/password-reset", async (context) => {
+  routes.post("/password-reset", passwordResetRateLimit, async (context) => {
     const body = await parseJsonBody(context, passwordResetSchema);
 
     if (!body.ok) {

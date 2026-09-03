@@ -27,4 +27,42 @@ describe("environment config", () => {
         .passwordResetRedirectTo,
     ).toBe("https://app.example.com/reset-password");
   });
+
+  it("loads rate limit defaults", () => {
+    expect(loadAppEnv(buildEnv())).toMatchObject({
+      rateLimitEnabled: true,
+      rateLimitWindowMs: 60_000,
+      authRateLimitMax: 20,
+      passwordResetRateLimitMax: 5,
+      wbfVerificationRateLimitMax: 30,
+    });
+  });
+
+  it("allows rate limiting to be disabled", () => {
+    expect(loadAppEnv(buildEnv({ RATE_LIMIT_ENABLED: "false" })).rateLimitEnabled).toBe(false);
+  });
+
+  it("loads custom rate limit values", () => {
+    expect(
+      loadAppEnv(
+        buildEnv({
+          RATE_LIMIT_WINDOW_MS: "30000",
+          AUTH_RATE_LIMIT_MAX: "8",
+          PASSWORD_RESET_RATE_LIMIT_MAX: "3",
+          WBF_VERIFICATION_RATE_LIMIT_MAX: "12",
+        }),
+      ),
+    ).toMatchObject({
+      rateLimitWindowMs: 30_000,
+      authRateLimitMax: 8,
+      passwordResetRateLimitMax: 3,
+      wbfVerificationRateLimitMax: 12,
+    });
+  });
+
+  it("rejects invalid rate limit values", () => {
+    expect(() => loadAppEnv(buildEnv({ AUTH_RATE_LIMIT_MAX: "0" }))).toThrow(
+      "Environment variable AUTH_RATE_LIMIT_MAX must be a positive integer.",
+    );
+  });
 });
