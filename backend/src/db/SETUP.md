@@ -17,6 +17,8 @@ Create a Supabase project and copy these values into `.env`:
 - `AUTH_RATE_LIMIT_MAX`: optional. Defaults to `20` requests per window for register/login.
 - `PASSWORD_RESET_RATE_LIMIT_MAX`: optional. Defaults to `5` requests per window.
 - `WBF_VERIFICATION_RATE_LIMIT_MAX`: optional. Defaults to `30` requests per window.
+- `LOG_LEVEL`: optional. Defaults to `info`. Supported values are `debug`, `info`, `warn`, and `error`.
+- `REQUEST_LOGGING_ENABLED`: optional. Defaults to enabled. Set to `false` to disable structured request logs.
 
 Keep `SUPABASE_SERVICE_ROLE_KEY` out of frontend code.
 
@@ -80,3 +82,9 @@ If you need both local and deployed frontends:
 ```text
 CORS_ALLOWED_ORIGINS=http://localhost:5173,https://your-frontend.example.com
 ```
+
+## 6. Logging
+
+The backend writes structured JSON logs to the server console. Request logs include the request id, method, path, status, duration, client IP when available, and authenticated player id when the route has one.
+
+Clients may send `X-Request-Id`; otherwise the backend creates one and returns it in the same response header. This makes frontend error reports easier to match with backend logs.

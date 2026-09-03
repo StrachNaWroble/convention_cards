@@ -65,4 +65,31 @@ describe("environment config", () => {
       "Environment variable AUTH_RATE_LIMIT_MAX must be a positive integer.",
     );
   });
+
+  it("loads observability defaults", () => {
+    expect(loadAppEnv(buildEnv())).toMatchObject({
+      logLevel: "info",
+      requestLoggingEnabled: true,
+    });
+  });
+
+  it("loads custom observability config", () => {
+    expect(
+      loadAppEnv(
+        buildEnv({
+          LOG_LEVEL: "warn",
+          REQUEST_LOGGING_ENABLED: "false",
+        }),
+      ),
+    ).toMatchObject({
+      logLevel: "warn",
+      requestLoggingEnabled: false,
+    });
+  });
+
+  it("rejects invalid log levels", () => {
+    expect(() => loadAppEnv(buildEnv({ LOG_LEVEL: "verbose" }))).toThrow(
+      "Environment variable LOG_LEVEL must be one of: debug, info, warn, error.",
+    );
+  });
 });

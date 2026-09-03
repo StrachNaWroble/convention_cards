@@ -1,12 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { createApp } from "../../backend/src/app.js";
+import { createApp, type AppOptions } from "../../backend/src/app.js";
 import type { AuthService } from "../../backend/src/auth/index.js";
 import type { AuthProvider } from "../../backend/src/auth/auth.types.js";
 import type { CardService } from "../../backend/src/cards/index.js";
 import type { PartnershipService } from "../../backend/src/partnerships/index.js";
 import type { PlayerProfileService } from "../../backend/src/players/playerProfile.service.js";
 import type { Player } from "../../backend/src/players/player.types.js";
+import type { AppLogger, LogFields } from "../../backend/src/observability/index.js";
 import type { SharingService } from "../../backend/src/sharing/index.js";
 import { ok } from "../../backend/src/shared/result.js";
 import type { TemplateService } from "../../backend/src/templates/index.js";
@@ -113,8 +114,17 @@ function createWbfVerificationService(): WbfVerificationService {
   };
 }
 
-function createTestApp() {
-  return createApp({
+function createTestServices(overrides: Partial<{
+  auth: AuthService;
+  authProvider: AuthProvider;
+  cards: CardService;
+  partnerships: PartnershipService;
+  playerProfiles: PlayerProfileService;
+  sharing: SharingService;
+  templates: TemplateService;
+  wbfVerification: WbfVerificationService;
+}> = {}) {
+  return {
     auth: createAuthService(),
     authProvider: createAuthProvider(),
     cards: createCardService(),
@@ -123,7 +133,24 @@ function createTestApp() {
     sharing: createSharingService(),
     templates: createTemplateService(),
     wbfVerification: createWbfVerificationService(),
-  });
+    ...overrides,
+  };
+}
+
+function createTestApp(options?: AppOptions) {
+  return createApp(createTestServices(), options);
+}
+
+function createMemoryLogger(): AppLogger & { entries: { level: string; message: string; fields?: LogFields }[] } {
+  const entries: { level: string; message: string; fields?: LogFields }[] = [];
+
+  return {
+    entries,
+    debug: (message, fields) => entries.push({ level: "debug", message, fields }),
+    info: (message, fields) => entries.push({ level: "info", message, fields }),
+    warn: (message, fields) => entries.push({ level: "warn", message, fields }),
+    error: (message, fields) => entries.push({ level: "error", message, fields }),
+  };
 }
 
 describe("app CORS", () => {
@@ -236,8 +263,118 @@ describe("app CORS", () => {
 
     expect(response.status).toBe(204);
     expect(response.headers.get("Access-Control-Allow-Origin")).toBe("https://app.example.com");
-    expect(response.headers.get("Access-Control-Allow-Headers")).toBe("Authorization,Content-Type");
+    expect(response.headers.get("Access-Control-Allow-Headers")).toBe("Authorization,Content-Type,X-Request-Id");
     expect(response.headers.get("Access-Control-Allow-Methods")).toContain("POST");
     expect(response.headers.get("Access-Control-Max-Age")).toBe("300");
+  });
+});
+
+describe("app request logging", () => {
+  it("adds a request id and logs successful requests", async () => {
+    const logger = createMemoryLogger();
+    const app = createTestApp({
+      logger,
+      requestLogging: true,
+    });
+
+    const response = await app.request("/health", {
+      headers: {
+        "x-request-id": "request-1",
+        "x-forwarded-for": "203.0.113.10",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("X-Request-Id")).toBe("request-1");
+    expect(logger.entries).toContainEqual({
+      level: "info",
+      message: "http.request",
+      fields: expect.objectContaining({
+        requestId: "request-1",
+        method: "GET",
+        path: "/health",
+        status: 200,
+        clientIp: "203.0.113.10",
+      }),
+    });
+  });
+
+  it("logs client errors as warnings", async () => {
+    const logger = createMemoryLogger();
+    const app = createTestApp({
+      logger,
+      requestLogging: true,
+    });
+
+    const response = await app.request("/missing", {
+      headers: {
+        "x-request-id": "request-2",
+      },
+    });
+
+    expect(response.status).toBe(404);
+    expect(logger.entries).toContainEqual({
+      level: "warn",
+      message: "http.request",
+      fields: expect.objectContaining({
+        requestId: "request-2",
+        method: "GET",
+        path: "/missing",
+        status: 404,
+      }),
+    });
+  });
+
+  it("logs internal errors with request context", async () => {
+    const logger = createMemoryLogger();
+    const app = createApp(
+      createTestServices({
+        wbfVerification: {
+          verifyWbfNumber: vi.fn(async () => {
+            throw new Error("WBF lookup exploded.");
+          }),
+        },
+      }),
+      {
+        logger,
+        requestLogging: true,
+      },
+    );
+
+    const response = await app.request("/wbf-verification/verify", {
+      method: "POST",
+      body: JSON.stringify({ wbfNumber: "123456" }),
+      headers: {
+        "content-type": "application/json",
+        "x-request-id": "request-3",
+      },
+    });
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({
+      error: {
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Something went wrong.",
+      },
+    });
+    expect(logger.entries).toContainEqual({
+      level: "error",
+      message: "http.error",
+      fields: expect.objectContaining({
+        requestId: "request-3",
+        method: "POST",
+        path: "/wbf-verification/verify",
+        errorName: "Error",
+        errorMessage: "WBF lookup exploded.",
+      }),
+    });
+    expect(logger.entries).toContainEqual({
+      level: "error",
+      message: "http.request",
+      fields: expect.objectContaining({
+        requestId: "request-3",
+        status: 500,
+      }),
+    });
   });
 });
